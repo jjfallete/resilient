@@ -14,58 +14,18 @@ from resilient_circuits import ResilientComponent, function, handler, StatusMess
 import utilities.util.selftest as selftest
 
 log = logging.getLogger(__name__)
+
 def_self = None
 incident_id = None
 attachment_id = None
 eml_filename = None
 attachments = []
+urls = []
+
 results = {}  # Contains: hostname (string), was_successful (bool)
 
-
-# This takes HTML formmated text, and returns a clean string of the text.
-#   Credit to Joseph Roten via stackoverflow.com/a/26047835
-# @param strText -> [String], The string of HTML text that needs conversion.
-# @return -> [String], The cleaned string of text.
-def html2text(strText):
-    str1 = strText
-    int2 = str1.lower().find("<body")
-    if int2 > 0:
-        str1 = str1[int2:]
-    int2 = str1.lower().find("</body>")
-    if int2 > 0:
-        str1 = str1[:int2]
-    list1 = ['<br>', '<tr', '<td', '</p>', 'span>', 'li>', '</h', 'div>']
-    list2 = [chr(13), chr(13), chr(9), chr(13), chr(13), chr(13), chr(13), chr(13)]
-    bolFlag1 = True
-    bolFlag2 = True
-    strReturn = ""
-    for int1 in range(len(str1)):
-        str2 = str1[int1]
-    for int2 in range(len(list1)):
-        if str1[int1:int1 + len(list1[int2])].lower() == list1[int2]:
-            strReturn = strReturn + list2[int2]
-        if str1[int1:int1 + 7].lower() == '<script' or str1[int1:int1 + 9].lower() == '<noscript':
-            bolFlag1 = False
-        if str1[int1:int1 + 6].lower() == '<style':
-            bolFlag1 = False
-        if str1[int1:int1 + 7].lower() == '</style':
-            bolFlag1 = True
-        if str1[int1:int1 + 9].lower() == '</script>' or str1[int1:int1 + 11].lower() == '</noscript>':
-            bolFlag1 = True
-        if str2 == '<':
-            bolFlag2 = False
-        if bolFlag1 and bolFlag2 and (ord(str2) != 10):
-            strReturn = strReturn + str2
-        if str2 == '>':
-            bolFlag2 = True
-        if bolFlag1 and bolFlag2:
-            strReturn = strReturn.replace(chr(32) + chr(13), chr(13))
-            strReturn = strReturn.replace(chr(9) + chr(13), chr(13))
-            strReturn = strReturn.replace(chr(13) + chr(32), chr(13))
-            strReturn = strReturn.replace(chr(13) + chr(9), chr(13))
-            strReturn = strReturn.replace(chr(13) + chr(13), chr(13))
-    strReturn = strReturn.replace(chr(13), '\n')
-    return strReturn
+WEB_URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))"""
+HTML_URL_REGEX = r'href=[\'"]?([^\'" >]+)'
 
 
 # This takes RTF formmated text, and returns a clean string of the text.
@@ -240,6 +200,7 @@ def get_decoded_email_body(mail):
     global incident_id
     global eml_filename
     global attachments
+    global urls
     text = ''
     if mail.is_multipart():
 
@@ -282,15 +243,32 @@ def get_decoded_email_body(mail):
                     t = unicode(part.get_payload(decode=True), str(charset), 'replace').encode('UTF-8', 'replace').strip()
                     text += '<br />'.join(t.splitlines())  # To HTML
 
+                    urls_temp = re.findall(WEB_URL_REGEX, text.strip())
+                    for u in urls_temp:
+                        if u not in urls: urls.append(u)
+
                 elif part.get_content_type() == 'text/html':
                     t = unicode(part.get_payload(decode=True), str(charset), 'replace').encode('UTF-8', 'replace').strip()
                     text += str(t)
-                    #text += html2text(t)
+
+                    skip_image_urls = []
+                    urls_html_temp = re.findall(HTML_URL_REGEX, text.strip())
+                    # Could also try: [a.get('href') for a in soup.find_all('a', href=True)]
+                    soup = BSHTML(text)
+                    images = soup.findAll('img')
+                    for image in images:
+                        skip_image_urls.append(image['src'])
+                    for u in urls_html_temp:
+                        if (u not in urls) and (u not in skip_image_urls): urls.append(u)
+
 
                 elif part.get_content_type() == 'text/enriched':  # This has not been tested yet, no test cases available.
                     t = unicode(part.get_payload(decode=True), str(charset), 'replace').encode('UTF-8', 'replace').strip()
                     text += '<br />'.join(striprtf(t).splitlines())  # To HTML
-                    #text += striprtf(t)
+
+                    urls_temp = re.findall(WEB_URL_REGEX, text.strip())
+                    for u in urls_temp:
+                        if u not in urls: urls.append(u)
 
             except Exception as err:
                 log.info('[ERROR] Encountered: ' + str(err))  # For debugging unexpected situations, function is robust as-is though
@@ -304,6 +282,11 @@ def get_decoded_email_body(mail):
     else:
         t = unicode(mail.get_payload(decode=True), mail.get_content_charset(), 'replace').encode('UTF-8', 'replace')
         text = '<br />'.join(t.splitlines())  # To HTML
+
+        urls_temp = re.findall(WEB_URL_REGEX, text.strip())
+        for u in urls_temp:
+            if u not in urls: urls.append(u)
+
         return text.strip()
 
 
@@ -331,6 +314,7 @@ class FunctionComponent(ResilientComponent):
             global attachment_id
             global eml_filename
             global attachments
+            global urls
             def_self = self
             incident_id = kwargs.get("incident_id")  # number
             attachment_id = kwargs.get("attachment_id")  # number
@@ -344,25 +328,6 @@ class FunctionComponent(ResilientComponent):
             mail = email.message_from_string(eml_file.decode("utf-8"))  # Get the email object from the raw contents
             email_body = get_decoded_email_body(mail)  # Get the UTF-8 encoded body from the raw email string
 
-            WEB_URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))"""
-            HTML_URL_REGEX = r'href=[\'"]?([^\'" >]+)'
-
-            skip_image_urls = []
-            try:
-                soup = BSHTML(email_body)
-                images = soup.findAll('img')
-                for image in images:
-                    skip_image_urls.append(image['src'])
-            except: pass
-
-            urls = re.findall(WEB_URL_REGEX, email_body.strip())
-            urls_html = re.findall(HTML_URL_REGEX, email_body.strip())
-            for u in urls_html:
-                if u not in urls:
-                    urls.append(u)
-            for u in urls:
-                if u in skip_image_urls:
-                    urls.remove(u)
 
             results['body'] = str(email_body)
             results['mail_items'] = mail.items()
