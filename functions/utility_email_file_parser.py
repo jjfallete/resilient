@@ -333,6 +333,8 @@ class FunctionComponent(ResilientComponent):
             results['mail_items'] = mail.items()
             results['attachments'] = attachments
             results['urls'] = list(set(urls))  # Ensures no duplicates
+            attachments = []
+            urls = []
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
