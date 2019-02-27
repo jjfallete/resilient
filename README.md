@@ -18,6 +18,6 @@ Resilient Automation Functions and Scripts
 ## Script Details:
 
 ###
-| **Function Name** | **Function Use** |
+| **Script Name** | **Script Use** |
 | :------------- |:-------------|
 | No submissions yet. | No submissions yet. |
