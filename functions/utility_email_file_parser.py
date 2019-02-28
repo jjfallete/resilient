@@ -211,7 +211,7 @@ def get_decoded_email_body(mail):
 
                 charset = part.get_content_charset()
 
-                if (part.get('Content-Disposition') is not None) and part.get_filename() is not None:  # Apparently, this may also work just as well, untested: if part.is_attachment():
+                if (part.get('Content-Disposition') is not None) and part.get_filename() is not None:
                     if "attachment" in part.get('Content-Disposition').lower():
                         try:
                             filename = part.get_filename()
