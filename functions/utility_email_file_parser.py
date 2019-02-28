@@ -218,7 +218,6 @@ def get_decoded_email_body(mail):
                             content = part.get_payload(decode=True)
                             text += '[attachment:' + filename + ']'
 
-                            # TO-DO: Save attachment to incident. For reference: open(filename, 'wb').write(content)
                             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                                 try:
                                     temp_file.write(content)
