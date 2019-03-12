@@ -3,7 +3,7 @@
 
 # This python function will parse a .eml attachment in Resilient.
 # File: utility_email_file_parser.py
-# Date: 02/27/2019 - Modified: 02/28/2019
+# Date: 02/27/2019 - Modified: 03/12/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -176,7 +176,7 @@ def choose_alternative_part(subparts):
 # Walks an email and returns its parts
 #   Credit to MythRen via gist.github.com/MythRen/25576219140a942824dd37858f0fef68
 # @param mail -> [List of Message Objects], The multipart/alternative payload of a message.
-# @return -> [String], The subpart, HTML if available
+# @return -> [String], The subpart, html if available
 def walk(mail):
 
     if mail.is_multipart():
@@ -220,14 +220,14 @@ def get_decoded_email_body(mail):
 
                 charset = part.get_content_charset()
 
-                if (part.get('Content-Disposition') is not None) and part.get_filename() is not None:  # Probably a file attachment
-                    if "attachment" in part.get('Content-Disposition').lower():  # For sure a file attachment
+                if (part.get('Content-Disposition') is not None) and part.get_filename() is not None:  # Likely a file attachment
+                    if "attachment" in part.get('Content-Disposition').lower():  # File attachment
                         try:
                             filename = part.get_filename()  # The name of the file
                             content = part.get_payload(decode=True)  # The content of the file
-                            text += '[attachment:' + filename + ']'  # Put where the attachment was found in the body text
-                            
-                            # Here we temporarily store the attachment, and then post it to the incident as an attachment and artifact
+                            text += '<br />[attachment: ' + filename + ']'  # Insert found attachment into the body text
+
+							 # Here we temporarily store the attachment, and then post it to the incident as an attachment and artifact
                             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                                 try:
                                     temp_file.write(content)
@@ -261,14 +261,14 @@ def get_decoded_email_body(mail):
                     text += str(t)
 
                     skip_image_urls = []
-                    urls_html_temp = re.findall(HTML_URL_REGEX, text.strip())  # Find all URLs in href tags of HTML body text
+                    urls_html_temp = re.findall(HTML_URL_REGEX, text.strip())
                     # Could also try: [a.get('href') for a in soup.find_all('a', href=True)]
                     soup = BSHTML(text)
                     images = soup.findAll('img')  # Find img tag urls, to ensure we don't put image URLs into urls list
                     for image in images:
                         skip_image_urls.append(image['src'])
                     for u in urls_html_temp:
-                        if (u not in urls) and (u not in skip_image_urls): urls.append(u)
+                        if (u not in urls) and (u not in skip_image_urls): urls.append(u)  # If not already in urls list and not an image, add it
 
 
                 elif part.get_content_type() == 'text/enriched':  # This has not been tested yet, no test cases available.
@@ -280,7 +280,7 @@ def get_decoded_email_body(mail):
                         if u not in urls: urls.append(u)  # If not already in urls list, add it
 
             except Exception as err:
-                log.info('[ERROR] Encountered: ' + str(err))  # For debugging unexpected situations, function is robust as-is though
+                log.info('[ERROR] Message body decoding failed at a part! Encountered: ' + str(err))  # For debugging unexpected situations, function is robust as-is though
 
         if text is not None and text is not "":
             return text.strip()
@@ -297,6 +297,33 @@ def get_decoded_email_body(mail):
             if u not in urls: urls.append(u)  # If not already in urls list, add it
 
         return text.strip()
+
+
+# This takes an email's header items list, and returns a decoded version of it.
+#   Works by decoding the content using character set detection.
+#   Partial credit to Derek Morgan via dmorgan.info/posts/encoded-word-syntax/
+#   Partial credit to Vitaly Greck via stackoverflow.com/a/12071098
+# @param mail -> [List], The list of email header item lists
+# @return -> [List], The list of email header item lists
+def get_decoded_email_header(mail_items):
+    try:
+        header = []
+        for item, content in mail_items:
+            content = ' '.join((item[0].decode(item[1] or 'UTF-8').encode('UTF-8') for item in email.header.decode_header(content)))
+            encoded_list = re.search(r'=\?(.*?)\?=', content)
+            if encoded_list:
+                for each in encoded_list.groups():
+                    encoded = re.match(r'=\?{1}(.+)\?{1}([B|Q])\?{1}(.+)\?{1}=', '=?' + each + '?=')
+                    if encoded:
+                        if len(encoded.groups()) != 3: continue
+                        charset, encoding, encoded_text = encoded.groups()
+                        if encoding is 'B': content = content.replace('=?' + each + '?=', encoded_text.decode('base64').decode(charset).encode('UTF-8'))
+            header.append([item, content])
+        return header
+
+    except Exception as err:
+        log.info('[ERROR] Header decoding failed, returning original! Caught: ' + str(err))  # For debugging unexpected situations, function is robust as-is though
+        return mail_items
 
 
 class FunctionComponent(ResilientComponent):
@@ -331,15 +358,16 @@ class FunctionComponent(ResilientComponent):
 
             eml_file = get_file_attachment(self.rest_client(), incident_id, artifact_id=None, task_id=None, attachment_id=attachment_id)
 
-            yield StatusMessage("Reading and decoding email message...")
+            yield StatusMessage('Reading and decoding email message (' + eml_filename + ')...')
 
             # Parse the email content
             mail = email.message_from_string(eml_file.decode("utf-8"))  # Get the email object from the raw contents
             email_body = get_decoded_email_body(mail)  # Get the UTF-8 encoded body from the raw email string
-
+            email_header = get_decoded_email_header(mail.items())
 
             results['body'] = str(email_body)  # The full email, HTML formatted
-            results['mail_items'] = mail.items()  # List of 2-tuples containing all the message’s field headers and values
+            results['header'] = email_header  # List of 2-tuples containing all the message’s field headers and values
+            # results['mail_items'] = mail.items()  # List of 2-tuples containing all the decoded message’s field headers and values (3/12/2019: deprecated, use 'header')
             results['attachments'] = attachments  # List of attachment names from EML file
             results['urls'] = list(set(urls))  # URLs from body. Set inside of the list used to ensures no duplicates.
             attachments = []  # Empty the list, this is required!
