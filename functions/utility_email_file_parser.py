@@ -7,6 +7,10 @@
 # Author: Jared F
 
 """Function implementation"""
+#   @function -> utility_email_file_parser
+#   @params -> integer: incident_id, integer: attachment_id, string: attachment_name
+#   @return -> string: results['body'], list: results['header'], list: results['attachments'], list: results['urls']
+
 
 import re
 import os
@@ -20,17 +24,6 @@ from resilient_circuits import ResilientComponent, function, handler, StatusMess
 import utilities.util.selftest as selftest
 
 log = logging.getLogger(__name__)
-
-# Declare global variables
-def_self = None  # Resilient object
-incident_id = None  # Incident ID
-attachment_id = None  # Attachment ID
-eml_filename = None  # EML attachment filename
-attachments = []  # List for storing collected file attachments from EML email
-urls = []  # List for storing collected URLs from body
-
-# This is for the post-processor. Use like: email_body = results['body']
-results = {}  # Contains: body (string), mail_items (list), attachments (list), urls (list)
 
 # RegEx patterns: WEB_URL_REGEX used for plaintext email bodies. HTML_URL_REGEX used for HTML email bodies.
 WEB_URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))"""
@@ -203,14 +196,12 @@ def walk(mail):
 #   Partial credit to miohtama via gist.github.com/miohtama/5389146
 # @param mail -> [String], The email message object structure from a string
 # @return -> [String], The cleaned email body string of text encoded in UTF-8.
-def get_decoded_email_body(mail):
+def get_decoded_email_body(def_self, incident_id, eml_filename, mail):
 
-    global def_self
-    global incident_id
-    global eml_filename
-    global attachments
-    global urls
+    attachments = []
+    urls = []
     text = ''  # Stores the email body text, HTML formatted, for the return value of this function.
+
     if mail.is_multipart():
 
         for part in list(walk(mail)):
@@ -227,7 +218,7 @@ def get_decoded_email_body(mail):
                             content = part.get_payload(decode=True)  # The content of the file
                             text += '<br />[attachment: ' + filename + ']'  # Insert found attachment into the body text
 
-							 # Here we temporarily store the attachment, and then post it to the incident as an attachment and artifact
+                            # Here we temporarily store the attachment, and then post it to the incident as an attachment and artifact
                             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                                 try:
                                     temp_file.write(content)
@@ -283,10 +274,10 @@ def get_decoded_email_body(mail):
                 log.info('[ERROR] Message body decoding failed at a part! Encountered: ' + str(err))  # For debugging unexpected situations, function is robust as-is though
 
         if text is not None and text is not "":
-            return text.strip()
+            return [text.strip(), attachments, urls]
 
         else:
-            return 'Unable to parse email body. Was it empty?'
+            return ['Unable to parse email body. Was it empty?', attachments, urls]
 
     else:
         t = unicode(mail.get_payload(decode=True), mail.get_content_charset(), 'replace').encode('UTF-8', 'replace')
@@ -296,7 +287,7 @@ def get_decoded_email_body(mail):
         for u in urls_temp:
             if u not in urls: urls.append(u)  # If not already in urls list, add it
 
-        return text.strip()
+        return [text.strip(), attachments, urls]
 
 
 # This takes an email's header items list, and returns a decoded version of it.
@@ -345,33 +336,26 @@ class FunctionComponent(ResilientComponent):
         """Function: Parses .eml files for email forensics. Useful for reported phishes."""
         try:
             # Get the function parameters:
-            global def_self
-            global incident_id
-            global attachment_id
-            global eml_filename
-            global attachments
-            global urls
-            def_self = self
             incident_id = kwargs.get("incident_id")  # number
             attachment_id = kwargs.get("attachment_id")  # number
             eml_filename = kwargs.get("attachment_name")  # text
 
+            # Get the eml file attachment by its incident and attachment IDs
             eml_file = get_file_attachment(self.rest_client(), incident_id, artifact_id=None, task_id=None, attachment_id=attachment_id)
 
             yield StatusMessage('Reading and decoding email message (' + eml_filename + ')...')
 
             # Parse the email content
             mail = email.message_from_string(eml_file.decode("utf-8"))  # Get the email object from the raw contents
-            email_body = get_decoded_email_body(mail)  # Get the UTF-8 encoded body from the raw email string
+            email_body, attachments, urls = get_decoded_email_body(self, incident_id, eml_filename, mail)  # Get the UTF-8 encoded body from the raw email string
             email_header = get_decoded_email_header(mail.items())
 
+            results = {}
             results['body'] = str(email_body)  # The full email, HTML formatted
             results['header'] = email_header  # List of 2-tuples containing all the message’s field headers and values
             # results['mail_items'] = mail.items()  # List of 2-tuples containing all the decoded message’s field headers and values (3/12/2019: deprecated, use 'header')
             results['attachments'] = attachments  # List of attachment names from EML file
             results['urls'] = list(set(urls))  # URLs from body. Set inside of the list used to ensures no duplicates.
-            attachments = []  # Empty the list, this is required!
-            urls = []  # Empty the list, this is required!
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
