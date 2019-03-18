@@ -17,7 +17,7 @@ from cbapi.response import CbEnterpriseResponseAPI, Binary, BannedHash
 from cbapi.errors import ObjectNotFoundError, InvalidHashError
 import carbon_black.util.selftest as selftest
 
-c = CbEnterpriseResponseAPI()
+cb = CbEnterpriseResponseAPI()
 
 
 class FunctionComponent(ResilientComponent):
@@ -52,7 +52,7 @@ class FunctionComponent(ResilientComponent):
 
             try:
                 results["seen_on_count"] = 0
-                binary = c.select(Binary, md5_hash)  # Try to get the binary data if it has been seen in the environment
+                binary = cb.select(Binary, md5_hash)  # Try to get the binary data if it has been seen in the environment
 
                 seen_on_count = len(binary.endpoints)  # Number of endpoints with the binary
                 results["seen_on_count"] = seen_on_count
@@ -75,7 +75,7 @@ class FunctionComponent(ResilientComponent):
             except (ObjectNotFoundError, InvalidHashError): pass  # No binary has been seen in the environment with the hash
             except Exception as err: yield StatusMessage('[WARNING] Encountered (but handled): ' + str(err))
 
-            bh = c.create(BannedHash)  # Create the hash ban object
+            bh = cb.create(BannedHash)  # Create the hash ban object
             bh.md5hash = md5_hash
             bh.text = ban_reason
             bh.enabled = True  # Enable the hash ban
