@@ -9,7 +9,7 @@
 """Function implementation"""
 #   @function -> cb_delete_file_kill_if_necessary
 #   @params -> integer: incident_id, string: hostname, string: path_or_file
-#   @return -> boolean: results['was_successful'], string: results['hostname'], list of strings: results['deleted'],
+#   @return -> boolean: results['was_successful'], string: results['hostname'], list of strings: results['deleted']
 
 import os
 import time
