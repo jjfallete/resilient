@@ -106,8 +106,7 @@ class FunctionComponent(ResilientComponent):
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Verify the incident still exists and is reachable, if not abort
-                    try:
-                        incident = self.rest_client().get('/incidents/{0}?text_content_output_format=always_text&handle_format=names'.format(str(incident_id)))
+                    try: incident = self.rest_client().get('/incidents/{0}?text_content_output_format=always_text&handle_format=names'.format(str(incident_id)))
                     except Exception as err:
                         if err.message and "not found" in err.message.lower():
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' no longer exists.')
