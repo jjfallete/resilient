@@ -9,7 +9,7 @@
 """Function implementation"""
 #   @function -> cb_delete_file_kill_if_necessary
 #   @params -> integer: incident_id, string: hostname, string: path_or_file
-#   @return -> boolean: results['was_successful'], string: results['hostname']
+#   @return -> boolean: results['was_successful'], string: results['hostname'], list of strings: results['deleted'],
 
 import os
 import time
@@ -44,6 +44,7 @@ class FunctionComponent(ResilientComponent):
         """Function: Deletes an absolute-path file or directory."""
 
         results = {}
+        results["was_successful"] = True
         results["hostname"] = None
         results["deleted"] = []
 
@@ -56,7 +57,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper()[:15]
+            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
