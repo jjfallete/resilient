@@ -38,6 +38,8 @@ class FunctionComponent(ResilientComponent):
     def _cb_ban_md5_hash_function(self, event, *args, **kwargs):
 
         results = {}
+        results["was_successful"] = False
+        results["seen_on_count"] = None
 
         try:
             # Get the function parameters:
