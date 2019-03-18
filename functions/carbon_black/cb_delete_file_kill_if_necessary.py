@@ -3,7 +3,7 @@
 
 # This function will delete an absolute-path file or directory from an endpoint, found processes will be killed prior to deletion.
 # File: cb_delete_file_kill_if_necessary.py
-# Date: 02/27/2019 - Modified: 03/18/2019
+# Date: 03/18/2019 - Modified: 03/18/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -44,6 +44,8 @@ class FunctionComponent(ResilientComponent):
         """Function: Deletes an absolute-path file or directory."""
 
         results = {}
+        results["hostname"] = None
+        results["deleted"] = []
 
         try:
             # Get the function parameters:
@@ -54,19 +56,18 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = (hostname.upper())[:15]
-            sensor = (cb.select(Sensor).where('hostname:' + hostname))  # Query CB for the hostname's sensor
+            hostname = hostname.upper()[:15]
+            sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
-                results["was_successful"] = False
                 yield FunctionResult(results)
                 return
 
             sensor = sensor[0]
             results["hostname"] = str(hostname).upper()
-            results["deleted"] = []
+            deleted = []
 
             while timeouts <= MAX_TIMEOUTS:  # Max timeouts before aborting
 
@@ -92,8 +93,8 @@ class FunctionComponent(ResilientComponent):
                     # Abort after DAYS_UNTIL_TIMEOUT
                     if sensor.status != "Online":
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        results["was_successful"] = False
                         yield FunctionResult(results)
+                        results["deleted"] = deleted
                         return
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
@@ -121,7 +122,6 @@ class FunctionComponent(ResilientComponent):
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
                     path = session.walk(path_or_file, False)  # Walk everything. False = performs a bottom->up walk, not top->down
-                    deleted = []
                     exe_files = []  # List of executable files, used for killing if necessary prior to deletion
                     other_files = []  # List of all other files
                     count = 0  # Will remain at 0 if path_or_file is a file and not a path
@@ -165,11 +165,8 @@ class FunctionComponent(ResilientComponent):
                             session.delete_file(path_or_file)  # Delete the file
                             deleted.append(path_or_file)
                             yield StatusMessage('[INFO] Deleted: ' + path_or_file)
-                            results["was_successful"] = False
                         except TimeoutError: raise TimeoutError(message=err)
                         except: yield StatusMessage('[ERROR] Deletion failed for: ' + path_or_file)
-
-                    results["deleted"] = deleted
 
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
@@ -177,7 +174,6 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                        results["was_successful"] = False
                     try: session.close()
                     except: pass
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
@@ -189,10 +185,11 @@ class FunctionComponent(ResilientComponent):
                 except Exception as err:  # Catch all other exceptions and abort
                     yield StatusMessage('[FATAL ERROR] Encountered: ' + str(err))
                     yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                    results["was_successful"] = False
+                    results["deleted"] = deleted
 
                 else:
                     results["was_successful"] = True
+                    results["deleted"] = deleted
 
                 try: session.close()
                 except: pass
