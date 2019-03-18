@@ -44,7 +44,7 @@ class FunctionComponent(ResilientComponent):
         """Function: Deletes an absolute-path file or directory."""
 
         results = {}
-        results["was_successful"] = True
+        results["was_successful"] = False
         results["hostname"] = None
         results["deleted"] = []
 
