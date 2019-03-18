@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will retrieve the Microsoft Antimalware and/or Windows Defender AV logs from a sensor running Win7, Win8, or Win10.
+# This function will retrieve the Microsoft Antimalware and/or Windows Defender AV logs.
 # File: cb_retrieve_av_logs.py
 # Date: 03/15/2019 - Modified: 03/18/2019
 # Author: Jared F
