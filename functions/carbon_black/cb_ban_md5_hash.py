@@ -3,7 +3,7 @@
 
 # This function will ban an MD5 hash in Carbon Black, preventing execution of the file on endpoints.
 # File: cb_ban_md5_hash.py
-# Date: 02/27/2019 - Modified: 03/18/2019
+# Date: 03/18/2019 - Modified: 03/18/2019
 # Author: Jared F
 
 """Function implementation"""
