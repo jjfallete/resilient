@@ -61,7 +61,6 @@ class FunctionComponent(ResilientComponent):
 
                 if binary.banned is not False:  # If the hash is banned already
                     yield StatusMessage('[FAILURE] Hash ' + str(md5_hash) + ' is already banned!')
-                    results["was_successful"] = False
                     yield FunctionResult(results)
                     return
 
@@ -70,7 +69,6 @@ class FunctionComponent(ResilientComponent):
 
                     if override_failing_if_hash_seen is not True:
                         yield StatusMessage('[FAILURE] Could not ban active hash ' + str(md5_hash) + '. Try again with override enabled if ban is still desired.')
-                        results["was_successful"] = False
                         yield FunctionResult(results)
                         return
 
@@ -88,7 +86,6 @@ class FunctionComponent(ResilientComponent):
                 if 'Received error code 409 from API:' in str(err): yield StatusMessage('[FATAL ERROR] ' + str(err).replace('Received error code 409 from API: ', '').replace("'", '').strip())  # Already banned, not seen
                 else: yield StatusMessage('[FATAL ERROR] Encountered: ' + str(err))
                 yield StatusMessage('[FAILURE] Could not ban hash ' + str(md5_hash))
-                results["was_successful"] = False
             else:
                 yield StatusMessage('[SUCCESS] Banned hash ' + str(md5_hash))
                 results["was_successful"] = True
