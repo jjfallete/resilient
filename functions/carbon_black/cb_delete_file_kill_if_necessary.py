@@ -57,7 +57,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]
+            hostname = hostname.upper()[:15]
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
