@@ -3,7 +3,7 @@
 
 # This function will retrieve the Microsoft Antimalware and/or Windows Defender AV logs from a sensor running Win7, Win8, or Win10.
 # File: cb_retrieve_av_logs.py
-# Date: 02/27/2019 - Modified: 03/15/2019
+# Date: 03/15/2019 - Modified: 03/18/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -54,8 +54,8 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = (hostname.upper())[:15]  # CB limits hostname to 15 characters
-            sensor = (cb.select(Sensor).where('hostname:' + hostname))  # Query CB for the hostname's sensor
+            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
+            sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
