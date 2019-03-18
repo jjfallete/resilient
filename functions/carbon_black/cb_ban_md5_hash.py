@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will ban an MD5 hash from Carbon Black.
+# This function will ban an MD5 hash in Carbon Black, preventing execution of the file on endpoints.
 # File: cb_ban_md5_hash.py
 # Date: 02/27/2019 - Modified: 03/18/2019
 # Author: Jared F
@@ -36,7 +36,6 @@ class FunctionComponent(ResilientComponent):
 
     @function("cb_ban_md5_hash")
     def _cb_ban_md5_hash_function(self, event, *args, **kwargs):
-        """Function: Bans an MD5 in Carbon Black, preventing execution of the file."""
 
         results = {}
 
