@@ -3,7 +3,7 @@
 
 # This function will delete an absolute-path file or directory from an endpoint, found processes will be killed prior to deletion.
 # File: cb_delete_file_kill_if_necessary.py
-# Date: 03/18/2019 - Modified: 03/18/2019
+# Date: 03/18/2019 - Modified: 03/26/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -17,8 +17,8 @@ import logging
 import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
 from cbapi.response import CbEnterpriseResponseAPI, Sensor
-from cbapi.errors import TimeoutError
-from urllib3.exceptions import NewConnectionError, ConnectTimeoutError, MaxRetryError
+from cbapi.errors import TimeoutError, ApiError
+from urllib3.exceptions import ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError
 import carbon_black.util.selftest as selftest
 
 cb = CbEnterpriseResponseAPI()  # CB Response API
@@ -86,7 +86,7 @@ class FunctionComponent(ResilientComponent):
 
                     # Check online status
                     if sensor.status != "Online":
-                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for 3 days...')
+                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for {} days...').format(str(DAYS_UNTIL_TIMEOUT))
                     while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
@@ -183,7 +183,8 @@ class FunctionComponent(ResilientComponent):
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                     continue
                     
-                except(NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                    if 'ApiError' in str(err.__class__.__name__) and 'network connection error' not in str(e): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
