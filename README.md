@@ -5,10 +5,10 @@ Resilient Automation Functions and Scripts
 
 
 
-## Function Packages:
+## Functions:
 
 ###
-| **Function Name** | **Function Use** |
+| **Directory** | **Contents** |
 | :------------- |:-------------|
 | carbon_black | Carbon Black API functions. |
 | utilities | General helper utility functions. |
