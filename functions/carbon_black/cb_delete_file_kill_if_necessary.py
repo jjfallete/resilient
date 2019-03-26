@@ -58,7 +58,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper()[:15]
+            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
@@ -67,7 +67,7 @@ class FunctionComponent(ResilientComponent):
                 yield FunctionResult(results)
                 return
 
-            sensor = sensor[0]
+            sensor = sensor[0]  # Get the sensor object from the query
             results["hostname"] = str(hostname).upper()
             deleted = []
 
