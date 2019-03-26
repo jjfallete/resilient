@@ -173,15 +173,15 @@ class FunctionComponent(ResilientComponent):
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                        try: session.close()
+                        except: pass
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
+                        sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
+                        time.sleep(30)  # Sleep to apply sensor restart
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                    try: session.close()
-                    except: pass
-                    sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
-                    sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
-                    time.sleep(30)  # Sleep to apply sensor restart
-                    sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -189,10 +189,10 @@ class FunctionComponent(ResilientComponent):
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
+                        time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                    time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
