@@ -86,7 +86,7 @@ class FunctionComponent(ResilientComponent):
 
                     # Check online status
                     if sensor.status != "Online":
-                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for {} days...').format(str(DAYS_UNTIL_TIMEOUT))
+                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
                     while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
@@ -184,12 +184,12 @@ class FunctionComponent(ResilientComponent):
                     continue
                     
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
-                    if 'ApiError' in str(err.__class__.__name__) and 'network connection error' not in str(e): raise  # Only handle ApiError involving network connection error
+                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(e): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
                     else:
-                        yield StatusMessage('[FATAL ERROR] {} was encountered. The maximum number of retries was reached. Aborting!').format(str(type(err).__name__))
+                        yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
                     time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     continue
