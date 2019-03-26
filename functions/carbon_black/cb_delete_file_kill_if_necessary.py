@@ -42,7 +42,6 @@ class FunctionComponent(ResilientComponent):
 
     @function("cb_delete_file_kill_if_necessary")
     def _cb_delete_file_kill_if_necessary_function(self, event, *args, **kwargs):
-        """Function: Deletes an absolute-path file or directory."""
 
         results = {}
         results["was_successful"] = False
