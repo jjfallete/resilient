@@ -10,4 +10,5 @@
 | cb_isolate_system | Isolates an endpoint via Carbon Black. |
 | cb_kill_process | Kills all processes on an endpoint containing a name or path. |
 | cb_remove_system_isolation | Removes isolation from an endpoint via Carbon Black. |
+| cb_retrieve_autoruns | Retrieves the the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieves the Microsoft Antimalware and/or Windows Defender AV logs. |
