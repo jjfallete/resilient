@@ -3,7 +3,7 @@
 
 # This function will retrieve the Microsoft Antimalware and/or Windows Defender AV logs.
 # File: cb_retrieve_av_logs.py
-# Date: 03/15/2019 - Modified: 03/18/2019
+# Date: 03/15/2019 - Modified: 03/26/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -20,8 +20,8 @@ import logging
 import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
 from cbapi.response import CbEnterpriseResponseAPI, Sensor
-from cbapi.errors import TimeoutError
-from urllib3.exceptions import NewConnectionError, ConnectTimeoutError, MaxRetryError
+from cbapi.errors import TimeoutError, ApiError
+from urllib3.exceptions import ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError
 import carbon_black.util.selftest as selftest
 
 cb = CbEnterpriseResponseAPI()  # CB Response API
@@ -83,7 +83,7 @@ class FunctionComponent(ResilientComponent):
 
                     # Check online status
                     if sensor.status != "Online":
-                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for 3 days...')
+                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
                     while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
@@ -175,12 +175,13 @@ class FunctionComponent(ResilientComponent):
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
                     continue
                     
-                except(NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(e): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
                     else:
-                        yield StatusMessage('[FATAL ERROR] {} was encountered. The maximum number of retries was reached. Aborting!').format(str(type(err).__name__))
+                        yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
                     time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     continue
