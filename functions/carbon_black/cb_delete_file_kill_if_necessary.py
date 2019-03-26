@@ -183,7 +183,7 @@ class FunctionComponent(ResilientComponent):
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                     continue
-                    
+
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
                     if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
