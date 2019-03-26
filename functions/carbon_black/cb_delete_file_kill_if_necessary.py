@@ -171,7 +171,8 @@ class FunctionComponent(ResilientComponent):
 
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
-                    if timeouts <= MAX_TIMEOUTS: yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                    if timeouts <= MAX_TIMEOUTS:
+                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
