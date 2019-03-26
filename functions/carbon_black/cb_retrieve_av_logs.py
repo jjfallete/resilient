@@ -55,18 +55,18 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
+            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
-                results["was_successful"] = False
                 yield FunctionResult(results)
                 return
 
-            sensor = sensor[0]  # Get the sensor object from the query
+            sensor = sensor[0]
             results["hostname"] = str(hostname).upper()
+            deleted = []
 
             while timeouts <= MAX_TIMEOUTS:  # Max timeouts before aborting
 
@@ -79,7 +79,7 @@ class FunctionComponent(ResilientComponent):
                     while (sensor.restart_queued is True) and (three_minutes_passed >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Check online status
                     if sensor.status != "Online":
@@ -87,13 +87,13 @@ class FunctionComponent(ResilientComponent):
                     while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
                     if sensor.status != "Online":
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        results["was_successful"] = False
                         yield FunctionResult(results)
+                        results["deleted"] = deleted
                         return
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
@@ -101,7 +101,7 @@ class FunctionComponent(ResilientComponent):
                     while (sensor.restart_queued is True) and (three_minutes_passed >= now):  # If the sensor is queued to restart, wait up to 90 seconds
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Verify the incident still exists and is reachable, if not abort
                     try: incident = self.rest_client().get('/incidents/{0}?text_content_output_format=always_text&handle_format=names'.format(str(incident_id)))
@@ -160,22 +160,21 @@ class FunctionComponent(ResilientComponent):
                         finally:
                             os.unlink(temp_zip.name)  # Delete temporary temp_zip
 
-                except TimeoutError:  # Catch TimeoutError and handle
+                                except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
-                    if timeouts <= MAX_TIMEOUTS: 
+                    if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
                         try: session.close()
                         except: pass
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                         sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                         time.sleep(30)  # Sleep to apply sensor restart
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                        results["was_successful"] = False
                     continue
-                    
+
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
                     if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
@@ -190,8 +189,7 @@ class FunctionComponent(ResilientComponent):
                 except Exception as err:  # Catch all other exceptions and abort
                     yield StatusMessage('[FATAL ERROR] Encountered: ' + str(err))
                     yield StatusMessage('[FAILURE] Fatal error caused exit!')
-                    results["was_successful"] = False
-                
+
                 else:
                     results["was_successful"] = True
 
