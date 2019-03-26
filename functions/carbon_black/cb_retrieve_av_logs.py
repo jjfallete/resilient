@@ -55,7 +55,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]
+            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
@@ -64,9 +64,8 @@ class FunctionComponent(ResilientComponent):
                 yield FunctionResult(results)
                 return
 
-            sensor = sensor[0]
+            sensor = sensor[0]  # Get the sensor object from the query
             results["hostname"] = str(hostname).upper()
-            deleted = []
 
             while timeouts <= MAX_TIMEOUTS:  # Max timeouts before aborting
 
@@ -93,7 +92,6 @@ class FunctionComponent(ResilientComponent):
                     if sensor.status != "Online":
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
-                        results["deleted"] = deleted
                         return
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
@@ -160,7 +158,7 @@ class FunctionComponent(ResilientComponent):
                         finally:
                             os.unlink(temp_zip.name)  # Delete temporary temp_zip
 
-                                except TimeoutError:  # Catch TimeoutError and handle
+                except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
