@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will retrieve the autorins from an endpoint in a CSV file.
+# This function will retrieve the autoruns from an endpoint in a CSV file.
 # File: cb_retrieve_autoruns.py
 # Date: 03/26/2019 - Modified: 03/26/2019
 # Author: Jared F
