@@ -1,6 +1,3 @@
-# Resilient
-
-
 ## Functions:
 
 ###
