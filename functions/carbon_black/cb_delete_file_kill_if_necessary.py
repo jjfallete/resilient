@@ -185,7 +185,7 @@ class FunctionComponent(ResilientComponent):
                     continue
                     
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
-                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(e): raise  # Only handle ApiError involving network connection error
+                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
                         yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
