@@ -25,6 +25,7 @@ import carbon_black.util.selftest as selftest
 cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
+PATH_TO_UTILITY = '/home/integrations/ir-tools/BrowsingHistoryView.exe'  # The integration server's absolute file path to the BrowsingHistoryView.exe utility
 
 
 class FunctionComponent(ResilientComponent):
@@ -130,9 +131,9 @@ class FunctionComponent(ResilientComponent):
                     except TimeoutError: raise TimeoutError(message=err)
                     except Exception: pass  # Didn't exist already
 
-                    session.put_file(open('/home/integrations/ir-tools/BrowsingHistoryView.exe', 'rb'), r'C:\Windows\CarbonBlack\Tools\BHV.exe')
+                    session.put_file(open(PATH_TO_UTILITY, 'rb'), r'C:\Windows\CarbonBlack\Tools\BHV.exe')  # Place the utility on the endpoint
 
-                    session.create_process(r'C:\Windows\CarbonBlack\Tools\BHV.exe /shtml "C:\Windows\CarbonBlack\Reports\bh-dump.html" /sort "Visit Time"', True)
+                    session.create_process(r'C:\Windows\CarbonBlack\Tools\BHV.exe /shtml "C:\Windows\CarbonBlack\Reports\bh-dump.html" /sort "Visit Time"', True)  # Execute the utility
                     yield StatusMessage('[SUCCESS] Executed BHV.exe on Sensor!')
 
                     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for HTML file
@@ -146,12 +147,8 @@ class FunctionComponent(ResilientComponent):
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file
 
-                    #open(save_path + '\\{0}-BrowsingHistory.html'.format(sensor.hostname), 'wb').write(session.get_file(r'C:\Windows\CarbonBlack\Reports\bh-dump.html'))
-                    #print ('[SUCCESS] Retrieved HTML data file from Sensor!')
-
                     session.delete_file(r'C:\Windows\CarbonBlack\Tools\BHV.exe')
                     session.delete_file(r'C:\Windows\CarbonBlack\Reports\bh-dump.html')
-
 
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
