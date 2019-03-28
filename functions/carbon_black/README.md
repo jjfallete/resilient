@@ -12,4 +12,4 @@
 | cb_remove_system_isolation | Remove isolation from an endpoint via Carbon Black. |
 | cb_retrieve_autoruns | Retrieve the the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieve the Microsoft Antimalware and/or Windows Defender AV logs from an endpoint in a zipped file. |
-| cb_retrieve_autoruns | Retrieve browsing history from an endpoint in an HTML data file. |
+| cb_retrieve_autoruns | Retrieve browsing history from an endpoint as an HTML data file. |
