@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will retrieve an HTML data file of the collected browsing history from an endpoint.
+# This function will retrieve browsing history from an endpoint as an HTML data file.
 # File: cb_retrieve_browsing_history.py
 # Date: 03/28/2019 - Modified: 03/28/2019
 # Author: Jared F
