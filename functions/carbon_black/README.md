@@ -13,3 +13,4 @@
 | cb_retrieve_autoruns | Retrieve the the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieve the Microsoft Antimalware and/or Windows Defender AV logs from an endpoint in a zipped file. |
 | cb_retrieve_autoruns | Retrieve browsing history from an endpoint as an HTML data file. Uses this utility: https://www.nirsoft.net/utils/browsing_history_view.html  |
+| cb_retrieve_carbon_black_logs | Retrieve Carbon Black log files from an endpoint using pre-determined file extensions. |
