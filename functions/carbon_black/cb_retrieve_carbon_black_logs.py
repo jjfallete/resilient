@@ -27,7 +27,7 @@ cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
 
-MAX_FILE_SIZE = 1000000  # Bytes: 1000000 = 100Mb
+MAX_FILE_SIZE = 100000000  # Bytes: 1000000 = 100Mb
 EXTENSIONS_TO_RETRIEVE = ['.txt', '.log', '.dump', '.dmp', '.tmp', '.html']
 
 
