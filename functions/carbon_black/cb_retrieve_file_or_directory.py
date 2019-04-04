@@ -131,7 +131,7 @@ class FunctionComponent(ResilientComponent):
                     else:
                         max_file_size = max_file_size*1000000  # Megabytes to bytes conversion
 
-                    if str(session.list_directory(path_or_file)[0]['attributes'][0]) != 'DIRECTORY':  # If path_or_file is a file
+                    if 'DIRECTORY' not in session.list_directory(path_or_file)[0]['attributes']:  # If path_or_file is a file
                         file_path = os.path.normpath(path_or_file)
                         file_size = session.list_directory(file_path)[0]['size']  # File size in bytes
                         custom_timeout = int((file_size / TRANSFER_RATE) + 120)  # The expected timeout duration + 120 seconds for good measure
