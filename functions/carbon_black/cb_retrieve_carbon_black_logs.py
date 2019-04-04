@@ -86,7 +86,7 @@ class FunctionComponent(ResilientComponent):
 
                     # Check online status
                     if sensor.status != "Online":
-                        yield StatusMessage('[WARNING] Hostname: {} is offline. Will attempt for {} days...').format(str(hostname), str(DAYS_UNTIL_TIMEOUT))
+                        yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
                     while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
