@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will
+# This function will retrieve Carbon Black log files from an endpoint using pre-determined file extensions.
 # File: cb_retrieve_carbon_black_logs.py
 # Date: 04/04/2019 - Modified: 04/04/2019
 # Author: Jared F
