@@ -130,6 +130,8 @@ class FunctionComponent(ResilientComponent):
                         max_file_size = MAX_FILE_SIZE  # Set max_file_size to the default value
                     else:
                         max_file_size = max_file_size*1000000  # Megabytes to bytes conversion
+                        
+                    yield StatusMessage('[INFO] Retrieving ' + str(os.path.normpath(path_or_file)))
 
                     if 'DIRECTORY' not in session.list_directory(path_or_file)[0]['attributes']:  # If path_or_file is a file
                         file_path = os.path.normpath(path_or_file)
