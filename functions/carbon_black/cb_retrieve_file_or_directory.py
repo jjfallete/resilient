@@ -167,7 +167,7 @@ class FunctionComponent(ResilientComponent):
                                         finally:
                                             os.unlink(temp_file.name)  # Delete temporary temp_file
 
-                            self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-CB_logs.zip'.format(sensor.hostname))  # Post zip_file to incident
+                            self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-retrieved.zip'.format(sensor.hostname))  # Post zip_file to incident
                             yield StatusMessage('[SUCCESS] Posted ZIP file to the incident as an attachment!')
 
                         finally:
