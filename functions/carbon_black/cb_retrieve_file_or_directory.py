@@ -128,6 +128,8 @@ class FunctionComponent(ResilientComponent):
 
                     if max_file_size is None:  # If max_file_size is not provided
                         max_file_size = MAX_FILE_SIZE  # Set max_file_size to the default value
+                    else:
+                        max_file_size = max_file_size*1000000  # Megabytes to bytes conversion
 
                     if str(session.list_directory(path_or_file)[0]['attributes'][0]) != 'DIRECTORY':  # If path_or_file is a file
                         file_path = os.path.normpath(path_or_file)
