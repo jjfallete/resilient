@@ -142,7 +142,7 @@ class FunctionComponent(ResilientComponent):
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved HTML data file from Sensor!')
                             self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_file.name, '{0}-browsing_history.html'.format(sensor.hostname))  # Post temp_file to incident
-                            yield StatusMessage('[SUCCESS] Posted CSV data file to the incident as an attachment!')
+                            yield StatusMessage('[SUCCESS] Posted HTML data file to the incident as an attachment!')
 
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file
