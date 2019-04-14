@@ -12,7 +12,7 @@
 | cb_remove_system_isolation | Remove isolation from an endpoint via Carbon Black. |
 | cb_retrieve_autoruns | Retrieve the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieve the Microsoft Antimalware and/or Windows Defender AV logs from an endpoint in a ZIP file. |
-| cb_retrieve_browsing_history | Retrieve the browsing history from an endpoint in an HTML file.\ Uses this utility: https://www.nirsoft.net/utils/browsing_history_view.html  |
+| cb_retrieve_browsing_history | Retrieve the browsing history from an endpoint in an HTML file.<br/> Uses this utility: https://www.nirsoft.net/utils/browsing_history_view.html  |
 | cb_retrieve_carbon_black_logs | Retrieve Carbon Black log files from an endpoint from pre-determined file extensions in a ZIP file. |
 | cb_retrieve_file_or_directory | Retrieve a file or directory from an endpoint in a ZIP file. |
 | cb_retrieve_logged_in_users | Retrieve the users currently logged into an endpoint in a CSV file. |
