@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will cb_retrieve_usb_history
+# This function will retrieve the USB and drive details from an endpoint in two HTML files.
 # File: cb_retrieve_usb_history.py
 # Date: 04/14/2019 - Modified: 04/14/2019
 # Author: Jared F
