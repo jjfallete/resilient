@@ -3,7 +3,7 @@
 
 # This function will retrieve the autoruns from an endpoint in a CSV file.
 # File: cb_retrieve_autoruns.py
-# Date: 03/26/2019 - Modified: 03/26/2019
+# Date: 03/26/2019 - Modified: 04/14/2019
 # Author: Jared F
 
 """Function implementation"""
