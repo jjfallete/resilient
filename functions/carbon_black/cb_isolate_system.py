@@ -48,7 +48,7 @@ class FunctionComponent(ResilientComponent):
 
             log = logging.getLogger(__name__)
 
-            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]  # CB limits hostname to 15 characters
+            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
