@@ -130,7 +130,7 @@ class FunctionComponent(ResilientComponent):
                     session.create_process(r'''cmd.exe /c wevtutil qe "Microsoft-Windows-Windows Defender/Operational" /rd:True /f:Text > C:\Windows\CarbonBlack\Reports\Defender_Events.txt''', True, None, None, 300, True)  # Execute the utility
                     yield StatusMessage('[SUCCESS] Queried all Windows Defender Windows events on Sensor!')
 
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for HTML file
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for TXT file
                         try:
                             temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Antimalware_Events.txt'))  # Write the HTML file from the endpoint to temp_file
                             temp_file.close()
@@ -143,7 +143,7 @@ class FunctionComponent(ResilientComponent):
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file
 
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for HTML file
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for TXT file
                         try:
                             temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Defender_Events.txt'))  # Write the HTML file from the endpoint to temp_file
                             temp_file.close()
