@@ -21,3 +21,4 @@
 | cb_retrieve_services | Retrieve the services from an endpoint in a CSV file. |
 | cb_retrieve_system_information | Retrieve current system information from an endpoint in a CSV file. No CBLR occurs. |
 | cb_retrieve_usb_history | Retrieve the USB and drive details from an endpoint in two HTML files. Uses these utilities:<br/>USBDeview: https://www.nirsoft.net/utils/usb_devices_view.html<br/>DriverView: https://www.nirsoft.net/utils/driverview.html|
+| cb_retrieve_user_accounts_data | This function will retrieve user account data from an endpoint as an HTML data file. |
