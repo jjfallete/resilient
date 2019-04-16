@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will run a specified AV scan using Microsoft Security Client or Windows Defender.
+# This function will run a specified AV scan using Microsoft Antimalware or Windows Defender on an endpoint.
 # File: cb_run_av_scan.py
-# Date: 03/18/2019 - Modified: 03/18/2019
+# Date: 04/16/2019 - Modified: 04/16/2019
 # Author: Jared F
 
 """Function implementation"""
