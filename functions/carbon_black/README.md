@@ -25,3 +25,4 @@
 | cb_retrieve_windows_av_events | Retrieve the Microsoft Security Client and/or Windows Defender Windows event logs from an endpoint in corresponding TXT files. |
 | cb_retrieve_windows_security_events | Retrieve the Windows Security event logs from an endpoint in a TXT file. |
 | cb_run_av_scan | Run a specified AV scan using Microsoft Security Client or Windows Defender on an endpoint. |
+| cb_run_eicar_test | Places the EICAR test virus on an endpoint. |
