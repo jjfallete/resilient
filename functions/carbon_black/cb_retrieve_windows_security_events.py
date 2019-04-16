@@ -8,7 +8,7 @@
 
 """Function implementation"""
 #   @function -> cb_retrieve_windows_security_events
-#   @params -> integer: incident_id, string: hostname
+#   @params -> integer: incident_id, string: hostname, integer: period_to_retrieve (optional)
 #   @return -> boolean: results['was_successful'], string: results['hostname']
 
 
@@ -56,7 +56,7 @@ class FunctionComponent(ResilientComponent):
             # Get the function parameters:
             incident_id = kwargs.get("incident_id")  # number
             hostname = kwargs.get("hostname")  # text
-            period_to_retrieve = kwargs.get("period_to_retrieve")  # number
+            period_to_retrieve = kwargs.get("period_to_retrieve")  # number - days of events to retrieve
 
             log = logging.getLogger(__name__)  # Establish logging
 
