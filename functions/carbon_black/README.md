@@ -24,3 +24,4 @@
 | cb_retrieve_user_accounts_data | Retrieve user account data from an endpoint as an HTML data file. Uses this utility:<br/>UserProfilesView: https://www.nirsoft.net/utils/user_profiles_view.html|
 | cb_retrieve_windows_av_events | Retrieve the Microsoft Antimalware and/or Windows Defender Windows event logs from an endpoint in corresponding TXT files. |
 | cb_retrieve_windows_security_events | Retrieve the Windows Security event logs from an endpoint in a TXT file. |
+| cb_run_av_scan | Run a specified AV scan using Microsoft Security Client or Windows Defender on an endpoint. |
