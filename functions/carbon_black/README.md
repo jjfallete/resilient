@@ -10,6 +10,7 @@
 | cb_force_reboot_with_message | Force an endpoint to reboot in a specified number of minutes with a custom pop-up message. |
 | cb_isolate_system | Isolate an endpoint via Carbon Black. |
 | cb_kill_process | Kill all processes on an endpoint containing a name or path. |
+| cb_notify_when_host_comes_online | Return when an endpoint appears online or a max_days value is reached. |
 | cb_remove_system_isolation | Remove isolation from an endpoint via Carbon Black. |
 | cb_retrieve_autoruns | Retrieve the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieve the Microsoft Security Client and/or Windows Defender AV logs from an endpoint in a ZIP file. |
