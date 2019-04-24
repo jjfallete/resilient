@@ -3,7 +3,7 @@
 
 # This function will retrieve a list of all installed programs on an endpoint.
 # File: cb_retrieve_installed_programs.py
-# Date: 03/18/2019 - Modified: 03/18/2019
+# Date: 04/24/2019 - Modified: 04/24/2019
 # Author: Jared F
 
 """Function implementation"""
