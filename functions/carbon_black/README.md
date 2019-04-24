@@ -7,6 +7,7 @@
 | :------------- |:-------------|
 | cb_ban_md5_hash | Ban an MD5 hash in Carbon Black, preventing execution of the file on endpoints. |
 | cb_delete_file_kill_if_necessary | Delete an absolute-path file or directory from an endpoint, found processes will be killed prior to deletion. |
+| cb_force_reboot_with_message | Force an endpoint to reboot in a specified number of minutes with a custom pop-up message. |
 | cb_isolate_system | Isolate an endpoint via Carbon Black. |
 | cb_kill_process | Kill all processes on an endpoint containing a name or path. |
 | cb_remove_system_isolation | Remove isolation from an endpoint via Carbon Black. |
