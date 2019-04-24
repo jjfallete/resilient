@@ -127,7 +127,7 @@ class FunctionComponent(ResilientComponent):
                     integration_server_path = integration_server_path + '\\{0}-autoruns.csv'.format(sensor.hostname)
 
                     # Collect the autoruns via PowerShell into a CSV, store the CSV in a tempfile, and post it to the incident as an attachment
-                    session.create_process(r'''powershell.exe -ExecutionPolicy Bypass -Command "Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Name, command, Location, User | Export-Csv "C:\Windows\CarbonBlack\Reports\autoruns.csv" -notypeinformation"''', True, None, None, 300, True)
+                    session.create_process(r'''powershell.exe -ExecutionPolicy Bypass -Command "Get-WmiObject -ClassName Win32_StartupCommand | Select-Object Name, command, Location, User | Export-Csv "C:\Windows\CarbonBlack\Reports\autoruns.csv" -notypeinformation"''', True, None, None, 300, True)
                     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for CSV
                         try:
                             temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\autoruns.csv'))  # Write the CSV from the endpoint to temp_file
