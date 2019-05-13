@@ -155,6 +155,10 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                        
+                    if lock_acquired is True:
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -166,6 +170,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
