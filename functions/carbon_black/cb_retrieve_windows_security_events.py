@@ -3,7 +3,7 @@
 
 # This function will retrieve the Windows Security event logs from an endpoint in a TXT file.
 # File: cb_retrieve_windows_security_events.py
-# Date: 04/16/2019 - Modified: 04/16/2019
+# Date: 04/16/2019 - Modified: 05/13/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -15,6 +15,7 @@
 import os
 import time
 import logging
+import shutil
 import tempfile
 import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
@@ -27,6 +28,7 @@ cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
 
+MAX_UPLOAD_SIZE = 50*1000000  # Maximum number of bytes of files to upload as an attachment before reverting to a netshare drop, default = 50MB
 TRANSFER_RATE = 225000  # Bytes per second, the expected minimum file transfer rate via Carbon Black
 
 
@@ -46,11 +48,11 @@ class FunctionComponent(ResilientComponent):
 
     @function("cb_retrieve_windows_security_events")
     def _cb_retrieve_windows_security_events_function(self, event, *args, **kwargs):
-        """Function: Retrieves all Windows security events."""
 
         results = {}
         results["was_successful"] = False
         results["hostname"] = None
+        lock_acquired = False
 
         try:
             # Get the function parameters:
@@ -90,13 +92,19 @@ class FunctionComponent(ResilientComponent):
                     # Check online status
                     if sensor.status != "Online":
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
-                    while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
+
+                    # Check lock status
+                    if os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                        yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
+
+                    # Wait for offline and locked hosts for days_later_timeout_length
+                    while (sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online":
+                    if sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
                         return
@@ -119,6 +127,14 @@ class FunctionComponent(ResilientComponent):
                             log.info('[FAILURE] Fatal error caused exit!')
                         return
 
+                    # Acquire host lock
+                    try:
+                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                        f.close()
+                        lock_acquired = True
+                    except OSError:
+                        continue
+
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
                     session = cb.live_response.request_session(sensor.id)
@@ -140,8 +156,14 @@ class FunctionComponent(ResilientComponent):
                             temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Security_Events.txt', timeout=custom_timeout))  # Write the HTML file from the endpoint to temp_file
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved Windows Security events data file from Sensor!')
-                            self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_file.name, '{0}-Security_Events.txt'.format(sensor.hostname))  # Post temp_file to incident
-                            yield StatusMessage('[SUCCESS] Posted Windows Security events data file to the incident as an attachment!')
+
+                            if os.stat(temp_file.name).st_size <= MAX_UPLOAD_SIZE:
+                                self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_file.name, '{0}-Security_Events.txt'.format(sensor.hostname))  # Post temp_file to incident
+                                yield StatusMessage('[SUCCESS] Posted Windows Security events data file to the incident as an attachment!')
+                            else:
+                                if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
+                                shutil.copyfile(temp_file.name, '/mnt/cyber-sec-forensics/Resilient/{0}/{1}-Security_Events-{2}.txt'.format(incident_id, sensor.hostname, str(int(time.time()))))  # Post temp_file to network share
+                                yield StatusMessage('[SUCCESS] Posted Windows Security events data file to the forensics network share!')
 
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file
@@ -151,7 +173,7 @@ class FunctionComponent(ResilientComponent):
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         try: session.close()
                         except: pass
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
@@ -167,7 +189,7 @@ class FunctionComponent(ResilientComponent):
                     if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
@@ -185,6 +207,14 @@ class FunctionComponent(ResilientComponent):
                 except: pass
                 yield StatusMessage('[INFO] Session has been closed to CB Sensor #' + str(sensor.id) + '(' + sensor.hostname + ')')
                 break
+
+            # Release the host lock if acquired
+            if lock_acquired is True:
+                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+
+            # Release the host lock if acquired
+            if lock_acquired is True:
+                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
