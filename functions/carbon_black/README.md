@@ -40,4 +40,4 @@
 2. Delete the 'resilient_circuits' import.
 3. Replace 'yield StatusMessage' with 'print' or a preferred equivalant.
 4. Replace 'yield FunctionResult(results)' with 'return results' or remove the use of 'results' completely. 
-5. Remove 'except Exception: yield FunctionError()' and it's corresponding 'try'
+5. Remove 'except Exception: yield FunctionError()' and it's corresponding 'try:'
