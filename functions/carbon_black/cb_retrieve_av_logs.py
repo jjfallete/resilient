@@ -22,6 +22,7 @@ import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
 from cbapi.response import CbEnterpriseResponseAPI, Sensor
 from cbapi.errors import TimeoutError
+from urllib3.exceptions import ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError
 import carbon_black.util.selftest as selftest
 
 cb = CbEnterpriseResponseAPI()  # CB Response API
@@ -62,7 +63,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
+            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]  # CB limits hostname to 15 characters
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
@@ -192,6 +193,24 @@ class FunctionComponent(ResilientComponent):
                     if timeouts <= MAX_TIMEOUTS: yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
+                        yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                        results["was_successful"] = False
+                    try: session.close()
+                    except: pass
+                    sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
+                    time.sleep(30)  # Sleep to apply sensor restart
+                    sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    continue
+
+                except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
+                    timeouts = timeouts + 1
+                    if timeouts <= MAX_TIMEOUTS:
+                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
+                        time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
+                    else:
+                        yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
                         results["was_successful"] = False
                     try: session.close()
