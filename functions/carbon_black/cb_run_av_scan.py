@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will run a specified AV scan using Microsoft Antimalware or Windows Defender on an endpoint.
+# This function will run a specified AV scan using Microsoft Security Client or Windows Defender on an endpoint.
 # File: cb_run_av_scan.py
-# Date: 04/16/2019 - Modified: 04/16/2019
+# Date: 04/16/2019 - Modified: 05/13/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -42,11 +42,11 @@ class FunctionComponent(ResilientComponent):
 
     @function("cb_run_av_scan")
     def _cb_run_av_scan_function(self, event, *args, **kwargs):
-        """Function: Launches a full scan using Defender/Security Center AV."""
 
         results = {}
         results["was_successful"] = False
         results["hostname"] = None
+        lock_acquired = False
 
         try:
             # Get the function parameters:
@@ -55,6 +55,7 @@ class FunctionComponent(ResilientComponent):
             scan_type = kwargs.get("scan_type")  # text - "full" "quick"
 
             log = logging.getLogger(__name__)  # Establish logging
+            # log.info('[DEBUG] scan_type: ' + str(scan_type))
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
             hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
@@ -86,13 +87,19 @@ class FunctionComponent(ResilientComponent):
                     # Check online status
                     if sensor.status != "Online":
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
-                    while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
+
+                    # Check lock status
+                    if os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                        yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
+
+                    # Wait for offline and locked hosts for days_later_timeout_length
+                    while (sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online":
+                    if sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
                         return
@@ -114,6 +121,14 @@ class FunctionComponent(ResilientComponent):
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' could not be reached, Resilient instance may be down.')
                             log.info('[FAILURE] Fatal error caused exit!')
                         return
+
+                    # Acquire host lock
+                    try:
+                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                        f.close()
+                        lock_acquired = True
+                    except OSError:
+                        continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
@@ -145,24 +160,24 @@ class FunctionComponent(ResilientComponent):
                                 break
 
                     if r'C:\Program Files\Microsoft Security Client\mpcmdrun.exe' in av_paths:
-                        if scan_type.lower().strip() is 'quick':
+                        if scan_type.lower().strip() == 'quick':
                             session.create_process(r'C:\Program Files\Microsoft Security Client\msseces.exe -QuickScan', False, None, None, 60, False)
                             yield StatusMessage('[SUCCESS] Quick scan started with Microsoft Security Client!')
                         else:
                             session.create_process(r'C:\Program Files\Microsoft Security Client\msseces.exe -FullScan', False, None, None, 60, False)
                             yield StatusMessage('[SUCCESS] Full scan started with Microsoft Security Client!')
                     else:
-                        if scan_type.lower().strip() is 'quick':
-                            session.create_process(r'C:\Program Files\Windows Defender\mpcmdrun.exe -scan -1', False, None, None, 60, False)
+                        if scan_type.lower().strip() == 'quick':
+                            session.create_process(r'C:\Program Files\Windows Defender\mpcmdrun.exe -Scan -ScanType 1', False, None, None, 60, False)
                             yield StatusMessage('[SUCCESS] Quick scan started with Windows Defender!')
                         else:
-                            session.create_process(r'C:\Program Files\Windows Defender\mpcmdrun.exe -scan -2', False, None, None, 60, False)
+                            session.create_process(r'C:\Program Files\Windows Defender\mpcmdrun.exe -Scan -ScanType 2', False, None, None, 60, False)
                             yield StatusMessage('[SUCCESS] Full scan started with Windows Defender!')
 
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         try: session.close()
                         except: pass
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
@@ -178,7 +193,7 @@ class FunctionComponent(ResilientComponent):
                     if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
@@ -196,6 +211,10 @@ class FunctionComponent(ResilientComponent):
                 except: pass
                 yield StatusMessage('[INFO] Session has been closed to CB Sensor #' + str(sensor.id) + '(' + sensor.hostname + ')')
                 break
+
+            # Release the host lock if acquired
+            if lock_acquired is True:
+                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
