@@ -32,9 +32,10 @@
 | cb_run_av_scan | Run a specified AV scan using Microsoft Security Client or Windows Defender on an endpoint. |
 | cb_run_eicar_test | Place the EICAR test virus on an endpoint. |
 
+<br /><br /><br /><hr>
 
-### Note for non-Resilient Carbon Black automation users:
-#### To adapt function code for multi-purpose use, simply follow these 5 steps:
+#### Note for non-Resilient Carbon Black automation users:
+##### To adapt function code for multi-purpose use, simply follow these 5 steps:
 1. Delete the entire 'FunctionComponent' class and use just the '@function' code instead.
 2. Delete the 'resilient_circuits' import.
 3. Replace 'yield StatusMessage' with 'print' or a preferred equivalant.
