@@ -2,8 +2,9 @@
 # pragma pylint: disable=unused-argument, no-self-use
 
 # This function will retrieve user account data from an endpoint as an HTML data file.
+#   Uses this utility-- UserProfilesView: https://www.nirsoft.net/utils/user_profiles_view.html
 # File: cb_retrieve_user_accounts_data.py
-# Date: 04/15/2019 - Modified: 04/15/2019
+# Date: 04/15/2019 - Modified: 05/13/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -49,6 +50,7 @@ class FunctionComponent(ResilientComponent):
         results = {}
         results["was_successful"] = False
         results["hostname"] = None
+        lock_acquired = False
 
         try:
             # Get the function parameters:
@@ -86,13 +88,19 @@ class FunctionComponent(ResilientComponent):
                     # Check online status
                     if sensor.status != "Online":
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
-                    while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
+
+                    # Check lock status
+                    if os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                        yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
+
+                    # Wait for offline and locked hosts for days_later_timeout_length
+                    while (sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online":
+                    if sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
                         return
@@ -114,6 +122,14 @@ class FunctionComponent(ResilientComponent):
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' could not be reached, Resilient instance may be down.')
                             log.info('[FAILURE] Fatal error caused exit!')
                         return
+
+                    # Acquire host lock
+                    try:
+                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                        f.close()
+                        lock_acquired = True
+                    except OSError:
+                        continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
@@ -154,7 +170,7 @@ class FunctionComponent(ResilientComponent):
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         try: session.close()
                         except: pass
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
@@ -170,7 +186,7 @@ class FunctionComponent(ResilientComponent):
                     if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
                     timeouts = timeouts + 1
                     if timeouts <= MAX_TIMEOUTS:
-                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/3)')
+                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                         time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
@@ -188,6 +204,10 @@ class FunctionComponent(ResilientComponent):
                 except: pass
                 yield StatusMessage('[INFO] Session has been closed to CB Sensor #' + str(sensor.id) + '(' + sensor.hostname + ')')
                 break
+
+            # Release the host lock if acquired
+            if lock_acquired is True:
+                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
