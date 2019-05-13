@@ -203,6 +203,7 @@ class FunctionComponent(ResilientComponent):
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
                     if lock_acquired is True:  # Release the host lock if acquired
                         os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -223,6 +224,7 @@ class FunctionComponent(ResilientComponent):
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
                     if lock_acquired is True:  # Release the host lock if acquired
                         os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
