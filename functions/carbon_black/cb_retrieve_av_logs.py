@@ -63,7 +63,7 @@ class FunctionComponent(ResilientComponent):
             log = logging.getLogger(__name__)  # Establish logging
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
-            hostname = hostname.upper().replace('@MNPOWER.COM', '').replace('.MNPOWER.COM', '')[:15]  # CB limits hostname to 15 characters
+            hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
@@ -201,6 +201,8 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -219,6 +221,8 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
