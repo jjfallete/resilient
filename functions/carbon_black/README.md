@@ -34,7 +34,7 @@
 
 <br /><br /><br /><hr>
 
-#### Note for non-Resilient Carbon Black automation users:
+#### <u>Note for non-Resilient Carbon Black automation users</u>:
 ##### To adapt function code for multi-purpose use, simply follow these 5 steps:
 1. Delete the entire 'FunctionComponent' class and use just the '@function' code instead.
 2. Delete the 'resilient_circuits' import.
