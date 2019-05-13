@@ -31,3 +31,12 @@
 | cb_retrieve_windows_security_events | Retrieve the Windows Security event logs from an endpoint in a TXT file. |
 | cb_run_av_scan | Run a specified AV scan using Microsoft Security Client or Windows Defender on an endpoint. |
 | cb_run_eicar_test | Place the EICAR test virus on an endpoint. |
+
+
+### Note for non-Resilient Carbon Black automation users:
+#### To adapt function code for multi-purpose use, simply follow these 5 steps:
+1. Delete the entire 'FunctionComponent' class and use just the '@function' code instead.
+2. Delete the 'resilient_circuits' import.
+3. Replace 'yield StatusMessage' with 'print' or a preferred equivalant.
+4. Replace 'yield FunctionResult(results)' with 'return results' or remove the use of 'results' completely. 
+5. Remove 'except Exception: yield FunctionError()' and it's corresponding 'try'
