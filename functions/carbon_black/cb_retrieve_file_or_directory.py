@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will retrieve a file or directory from an endpoint in a zipped file.
+# This function will retrieve a file or directory from an endpoint in a ZIP file.
 # File: cb_retrieve_file_or_directory.py
-# Date: 04/04/2019 - Modified: 04/04/2019
+# Date: 04/04/2019 - Modified: 05/13/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -14,6 +14,7 @@
 
 import os
 import time
+import shutil
 import tempfile
 import zipfile
 import logging
@@ -27,7 +28,8 @@ cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
 
-MAX_FILE_SIZE = 100000000  # Bytes, the default maximum file size to transfer (per file)
+MAX_FILE_SIZE = 100*1000000  # Bytes, the default maximum file size to transfer (per file), default = 100MB
+MAX_UPLOAD_SIZE = 50*1000000  # Maximum number of bytes of files to upload as an attachment before reverting to a netshare drop, default = 50MB
 TRANSFER_RATE = 225000  # Bytes per second, the expected minimum file transfer rate via Carbon Black
 
 
@@ -49,6 +51,9 @@ class FunctionComponent(ResilientComponent):
     def _cb_retrieve_file_or_directory_function(self, event, *args, **kwargs):
 
         results = {}
+        results["was_successful"] = False
+        results["hostname"] = None
+        lock_acquired = False
 
         try:
             # Get the function parameters:
@@ -89,15 +94,20 @@ class FunctionComponent(ResilientComponent):
                     # Check online status
                     if sensor.status != "Online":
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
-                    while (sensor.status != "Online") and (days_later_timeout_length >= now):  # Continuously check if the sensor comes online for 3 days
+
+                    # Check lock status
+                    if os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                        yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
+
+                    # Wait for offline and locked hosts for days_later_timeout_length
+                    while (sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
-                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                        sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online":
+                    if sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        results["was_successful"] = False
                         yield FunctionResult(results)
                         return
 
@@ -119,6 +129,14 @@ class FunctionComponent(ResilientComponent):
                             log.info('[FAILURE] Fatal error caused exit!')
                         return
 
+                    # Acquire host lock
+                    try:
+                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                        f.close()
+                        lock_acquired = True
+                    except OSError:
+                        continue
+
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
                     session = cb.live_response.request_session(sensor.id)
@@ -130,7 +148,7 @@ class FunctionComponent(ResilientComponent):
                         max_file_size = MAX_FILE_SIZE  # Set max_file_size to the default value
                     else:
                         max_file_size = max_file_size*1000000  # Megabytes to bytes conversion
-                        
+
                     yield StatusMessage('[INFO] Retrieving ' + str(os.path.normpath(path_or_file)))
 
                     if 'DIRECTORY' not in session.list_directory(path_or_file)[0]['attributes']:  # If path_or_file is a file
@@ -171,15 +189,20 @@ class FunctionComponent(ResilientComponent):
                                         finally:
                                             os.unlink(temp_file.name)  # Delete temporary temp_file
 
-                            self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-retrieved.zip'.format(sensor.hostname))  # Post zip_file to incident
-                            yield StatusMessage('[SUCCESS] Posted ZIP file to the incident as an attachment!')
+                            if os.stat(temp_zip.name).st_size <= MAX_UPLOAD_SIZE:
+                                self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-retrieved.txt'.format(sensor.hostname))  # Post temp_zip to incident
+                                yield StatusMessage('[SUCCESS] Posted ZIP file of Carbon Black logs to the incident as an attachment!')
+                            else:
+                                if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
+                                shutil.copyfile(temp_zip.name, '/mnt/cyber-sec-forensics/Resilient/{0}/{1}-retrieved-{2}.txt'.format(incident_id, sensor.hostname, str(int(time.time()))))  # Post temp_zip to network share
+                                yield StatusMessage('[SUCCESS] Posted ZIP file of Carbon Black logs to the forensics network share!')
 
                         finally:
                             os.unlink(temp_zip.name)  # Delete temporary temp_file
 
                 except TimeoutError:  # Catch TimeoutError and handle
                     timeouts = timeouts + 1
-                    if timeouts <= MAX_TIMEOUTS: yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/3)')
+                    if timeouts <= MAX_TIMEOUTS: yield StatusMessage('[ERROR] TimeoutError was encountered. Reattempting... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
@@ -204,6 +227,10 @@ class FunctionComponent(ResilientComponent):
                 except: pass
                 yield StatusMessage('[INFO] Session has been closed to CB Sensor #' + str(sensor.id) + '(' + sensor.hostname + ')')
                 break
+
+            # Release the host lock if acquired
+            if lock_acquired is True:
+                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
