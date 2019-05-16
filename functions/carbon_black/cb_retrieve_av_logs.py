@@ -21,7 +21,7 @@ import logging
 import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
 from cbapi.response import CbEnterpriseResponseAPI, Sensor
-from cbapi.errors import TimeoutError
+from cbapi.errors import TimeoutError, ApiError
 from urllib3.exceptions import ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError
 import carbon_black.util.selftest as selftest
 
@@ -128,12 +128,13 @@ class FunctionComponent(ResilientComponent):
                         return
 
                     # Acquire host lock
-                    try:
-                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
-                        f.close()
-                        lock_acquired = True
-                    except OSError:
-                        continue
+                    if lock_acquired is False:
+                        try:
+                            f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                            f.close()
+                            lock_acquired = True
+                        except OSError:
+                            continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
@@ -201,9 +202,6 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
-                    if lock_acquired is True:  # Release the host lock if acquired
-                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
-                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -222,9 +220,6 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
-                    if lock_acquired is True:  # Release the host lock if acquired
-                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
-                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort

@@ -3,7 +3,7 @@
 
 # This function will retrieve the Microsoft Security Client and/or Windows Defender Windows event logs from an endpoint in corresponding TXT files.
 # File: cb_retrieve_windows_av_events.py
-# Date: 04/15/2019 - Modified: 05/13/2019
+# Date: 04/15/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -126,12 +126,13 @@ class FunctionComponent(ResilientComponent):
                         return
 
                     # Acquire host lock
-                    try:
-                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
-                        f.close()
-                        lock_acquired = True
-                    except OSError:
-                        continue
+                    if lock_acquired is False:
+                        try:
+                            f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                            f.close()
+                            lock_acquired = True
+                        except OSError:
+                            continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')

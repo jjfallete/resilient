@@ -4,7 +4,7 @@
 # This function will retrieve user account data from an endpoint as an HTML data file.
 #   Uses this utility-- UserProfilesView: https://www.nirsoft.net/utils/user_profiles_view.html
 # File: cb_retrieve_user_accounts_data.py
-# Date: 04/15/2019 - Modified: 05/13/2019
+# Date: 04/15/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -124,12 +124,13 @@ class FunctionComponent(ResilientComponent):
                         return
 
                     # Acquire host lock
-                    try:
-                        f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
-                        f.close()
-                        lock_acquired = True
-                    except OSError:
-                        continue
+                    if lock_acquired is False:
+                        try:
+                            f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                            f.close()
+                            lock_acquired = True
+                        except OSError:
+                            continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
