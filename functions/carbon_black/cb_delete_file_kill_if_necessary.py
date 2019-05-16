@@ -127,7 +127,8 @@ class FunctionComponent(ResilientComponent):
                         f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
                         f.close()
                         lock_acquired = True
-                    except OSError: continue
+                    except OSError:
+                        continue
 
                     # Establish a session to the host sensor
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
