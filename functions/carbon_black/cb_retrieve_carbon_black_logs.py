@@ -3,7 +3,7 @@
 
 # This function will retrieve Carbon Black log files from an endpoint from pre-determined file extensions in a ZIP file.
 # File: cb_retrieve_carbon_black_logs.py
-# Date: 04/04/2019 - Modified: 05/13/2019
+# Date: 04/04/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -203,6 +203,9 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
