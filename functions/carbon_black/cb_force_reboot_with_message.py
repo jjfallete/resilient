@@ -3,7 +3,7 @@
 
 # This function will force an endpoint to reboot in a specified number of minutes with a custom pop-up message.
 # File: cb_force_reboot_with_message.py
-# Date: 04/24/2019 - Modified: 05/13/2019
+# Date: 04/24/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -153,6 +153,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -164,6 +167,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
