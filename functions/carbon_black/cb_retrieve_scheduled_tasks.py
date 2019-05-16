@@ -3,7 +3,7 @@
 
 # This function will retrieve the scheduled tasks from an endpoint in a CSV file.
 # File: cb_retrieve_scheduled_tasks.py
-# Date: 04/14/2019 - Modified: 05/13/2019
+# Date: 04/14/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -162,6 +162,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -173,6 +176,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
