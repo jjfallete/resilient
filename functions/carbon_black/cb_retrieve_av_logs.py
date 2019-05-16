@@ -3,7 +3,7 @@
 
 # This function will retrieve the Microsoft Security Client and/or Windows Defender AV logs from an endpoint in a ZIP file.
 # File: cb_retrieve_av_logs.py
-# Date: 03/15/2019 - Modified: 05/13/2019
+# Date: 03/15/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
