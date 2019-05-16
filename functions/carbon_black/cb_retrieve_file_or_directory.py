@@ -3,7 +3,7 @@
 
 # This function will retrieve a file or directory from an endpoint in a ZIP file.
 # File: cb_retrieve_file_or_directory.py
-# Date: 04/04/2019 - Modified: 05/13/2019
+# Date: 04/04/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -21,7 +21,8 @@ import logging
 import datetime
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
 from cbapi.response import CbEnterpriseResponseAPI, Sensor
-from cbapi.errors import TimeoutError
+from cbapi.errors import TimeoutError, ApiError
+from urllib3.exceptions import ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError
 import carbon_black.util.selftest as selftest
 
 cb = CbEnterpriseResponseAPI()  # CB Response API
@@ -213,6 +214,23 @@ class FunctionComponent(ResilientComponent):
                     sensor.restart_sensor()  # Restarting the sensor may avoid a timeout from occurring again
                     time.sleep(30)  # Sleep to apply sensor restart
                     sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest CB sensor vitals
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
+                    continue
+
+                except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
+                    if 'ApiError' in str(type(err).__name__) and 'network connection error' not in str(err): raise  # Only handle ApiError involving network connection error
+                    timeouts = timeouts + 1
+                    if timeouts <= MAX_TIMEOUTS:
+                        yield StatusMessage('[ERROR] Carbon Black was unreachable. Reattempting in 30 minutes... (' + str(timeouts) + '/' + str(MAX_TIMEOUTS) + ')')
+                        time.sleep(1800)  # Sleep for 30 minutes, backup service may have been running.
+                    else:
+                        yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
+                        yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
