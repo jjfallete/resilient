@@ -3,7 +3,7 @@
 
 # This function will kill all processes on an endpoint containing a name or path. Warning: 'process' will kill 'process.exe' AND 'process1.exe' AND '2process1.exe'
 # File: cb_kill_process.py
-# Date: 03/26/2019 - Modified: 05/13/2019
+# Date: 03/26/2019 - Modified: 05/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -162,6 +162,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] TimeoutError was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except(ApiError, ProtocolError, NewConnectionError, ConnectTimeoutError, MaxRetryError) as err:  # Catch urllib3 connection exceptions and handle
@@ -173,6 +176,9 @@ class FunctionComponent(ResilientComponent):
                     else:
                         yield StatusMessage('[FATAL ERROR] ' + str(type(err).__name__) + ' was encountered. The maximum number of retries was reached. Aborting!')
                         yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                    if lock_acquired is True:  # Release the host lock if acquired
+                        os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                        lock_acquired = False
                     continue
 
                 except Exception as err:  # Catch all other exceptions and abort
