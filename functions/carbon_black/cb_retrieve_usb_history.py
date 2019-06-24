@@ -93,7 +93,7 @@ class FunctionComponent(ResilientComponent):
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
 
                     # Check lock status
-                    if os.path.exists(lock_file):
+                    if os.path.exists(lock_file) and lock_acquired is False:
                         yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
 
                     # Wait for offline and locked hosts for days_later_timeout_length
