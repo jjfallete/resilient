@@ -57,6 +57,7 @@ class FunctionComponent(ResilientComponent):
 
             days_later_timeout_length = datetime.datetime.now() + datetime.timedelta(days=DAYS_UNTIL_TIMEOUT)  # Max duration length before aborting
             hostname = hostname.upper()[:15]  # CB limits hostname to 15 characters
+            lock_file = '/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)
             sensor = cb.select(Sensor).where('hostname:' + hostname)  # Query CB for the hostname's sensor
             timeouts = 0  # Number of timeouts that have occurred
 
@@ -86,17 +87,17 @@ class FunctionComponent(ResilientComponent):
                         yield StatusMessage('[WARNING] Hostname: ' + str(hostname) + ' is offline. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
 
                     # Check lock status
-                    if os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                    if os.path.exists(lock_file):
                         yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
 
                     # Wait for offline and locked hosts for days_later_timeout_length
-                    while (sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))) and (days_later_timeout_length >= now):
+                    while (sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False)) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online" or os.path.exists('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname)):
+                    if sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
                         return
@@ -122,7 +123,7 @@ class FunctionComponent(ResilientComponent):
                     # Acquire host lock
                     if lock_acquired is False:
                         try:
-                            f = os.fdopen(os.open('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname), os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
+                            f = os.fdopen(os.open(lock_file, os.O_CREAT | os.O_WRONLY | os.O_EXCL), 'w')
                             f.close()
                             lock_acquired = True
                         except OSError:
@@ -217,7 +218,7 @@ class FunctionComponent(ResilientComponent):
 
             # Release the host lock if acquired
             if lock_acquired is True:
-                os.remove('/home/integrations/.resilient/cb_host_locks/{}.lock'.format(hostname))
+                os.remove(lock_file)
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)

@@ -94,13 +94,13 @@ class FunctionComponent(ResilientComponent):
                         yield StatusMessage('[WARNING] A running action has a lock on  ' + str(hostname) + '. Will attempt for ' + str(DAYS_UNTIL_TIMEOUT) + ' days...')
 
                     # Wait for offline and locked hosts for days_later_timeout_length
-                    while (sensor.status != "Online" or (os.path.exists(lock_file)and lock_acquired is False)) and (days_later_timeout_length >= now):
+                    while (sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False)) and (days_later_timeout_length >= now):
                         time.sleep(3)  # Give the CPU a break, it works hard!
                         now = datetime.datetime.now()
                         sensor = (cb.select(Sensor).where('hostname:' + hostname))[0]  # Retrieve the latest sensor vitals
 
                     # Abort after DAYS_UNTIL_TIMEOUT
-                    if sensor.status != "Online" or (os.path.exists(lock_file)and lock_acquired is False):
+                    if sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
                         yield FunctionResult(results)
                         return
@@ -227,7 +227,6 @@ class FunctionComponent(ResilientComponent):
             # Release the host lock if acquired
             if lock_acquired is True:
                 os.remove(lock_file)
-                lock_acquired = False
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
