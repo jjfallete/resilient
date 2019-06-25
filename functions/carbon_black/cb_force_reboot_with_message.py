@@ -139,7 +139,7 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    session.create_process('shutdown -r -f -t ' + str(minutes*60) + ' -d p:5:19 -c "' + str(custom_message) + ' Restart will occur in ' + str(minutes) + ' minutes. Contact CTS Security and Compliance at x3199 option 5 with any questions."', True, None, None, 300, True)
+                    session.create_process('shutdown -r -f -t ' + str(minutes*60) + ' -d p:5:19 -c "' + str(custom_message) + ' Restart will occur in ' + str(minutes) + ' minutes. Contact CTS Security with any questions."', True, None, None, 300, True)
                     yield StatusMessage("[SUCCESS] Reboot has been scheduled!")
 
                 except TimeoutError:  # Catch TimeoutError and handle
