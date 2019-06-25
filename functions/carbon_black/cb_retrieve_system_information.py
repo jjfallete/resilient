@@ -3,7 +3,7 @@
 
 # This function will retrieve current system information from an endpoint in a CSV file.
 # File: cb_retrieve_system_information.py
-# Date: 04/14/2019 - Modified: 04/14/2019
+# Date: 04/14/2019 - Modified: 06/25/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -115,6 +115,7 @@ class FunctionComponent(ResilientComponent):
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
+                yield StatusMessage('[FAILURE] Fatal error caused exit!')
                 yield FunctionResult(results)
                 return
 

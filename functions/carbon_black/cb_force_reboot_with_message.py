@@ -3,7 +3,7 @@
 
 # This function will force an endpoint to reboot in a specified number of minutes with a custom pop-up message.
 # File: cb_force_reboot_with_message.py
-# Date: 04/24/2019 - Modified: 05/16/2019
+# Date: 04/24/2019 - Modified: 06/25/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -68,6 +68,7 @@ class FunctionComponent(ResilientComponent):
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
+                yield StatusMessage('[FAILURE] Fatal error caused exit!')
                 yield FunctionResult(results)
                 return
 
@@ -104,8 +105,8 @@ class FunctionComponent(ResilientComponent):
                     # Abort after DAYS_UNTIL_TIMEOUT
                     if sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        yield FunctionResult(results)
-                        return
+                        yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                        break
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
                     three_minutes_passed = datetime.datetime.now() + datetime.timedelta(minutes=3)
@@ -123,7 +124,7 @@ class FunctionComponent(ResilientComponent):
                         else:
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' could not be reached, Resilient instance may be down.')
                             log.info('[FAILURE] Fatal error caused exit!')
-                        return
+                        break
 
                     # Acquire host lock
                     if lock_acquired is False:
@@ -139,7 +140,7 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    session.create_process('shutdown -r -f -t ' + str(minutes*60) + ' -d p:5:19 -c "' + str(custom_message) + ' Restart will occur in ' + str(minutes) + ' minutes. Contact CTS Security with any questions."', True, None, None, 300, True)
+                    session.create_process('shutdown -r -f -t ' + str(minutes*60) + ' -d p:5:19 -c "' + str(custom_message) + ' Restart will occur in ' + str(minutes) + ' minutes. Contact CTS Security and Compliance at x3199 option 5 with any questions."', True, None, None, 300, True)
                     yield StatusMessage("[SUCCESS] Reboot has been scheduled!")
 
                 except TimeoutError:  # Catch TimeoutError and handle

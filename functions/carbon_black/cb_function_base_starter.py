@@ -3,7 +3,7 @@
 
 # This is a base starter for Carbon Black Response functions in Resilient.
 # File: cb_function_base_starter.py
-# Date: 05/13/2019 - Modified: 05/13/2019
+# Date: 05/13/2019 - Modified: 06/25/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -26,6 +26,7 @@ cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
 
+MAX_UPLOAD_SIZE = 50*1000000  # Maximum number of bytes of files to upload as an attachment before reverting to a netshare drop, default = 50MB
 TRANSFER_RATE = 225000  # Bytes per second, the expected minimum file transfer rate via Carbon Black
 
 
@@ -66,6 +67,7 @@ class FunctionComponent(ResilientComponent):
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
+                yield StatusMessage('[FAILURE] Fatal error caused exit!')
                 yield FunctionResult(results)
                 return
 
@@ -102,8 +104,8 @@ class FunctionComponent(ResilientComponent):
                     # Abort after DAYS_UNTIL_TIMEOUT
                     if sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        yield FunctionResult(results)
-                        return
+                        yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                        break
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
                     three_minutes_passed = datetime.datetime.now() + datetime.timedelta(minutes=3)
@@ -121,7 +123,7 @@ class FunctionComponent(ResilientComponent):
                         else:
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' could not be reached, Resilient instance may be down.')
                             log.info('[FAILURE] Fatal error caused exit!')
-                        return
+                        break
 
                     # Acquire host lock
                     if lock_acquired is False:

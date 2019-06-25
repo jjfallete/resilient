@@ -3,7 +3,7 @@
 
 # This function will removes all Microsoft Security Client and/or Windows Defender signature definitions and then updates them on an endpoint.
 # File: cb_refresh_av_signatures.py
-# Date: 03/26/2019 - Modified: 05/16/2019
+# Date: 03/26/2019 - Modified: 06/25/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -63,6 +63,7 @@ class FunctionComponent(ResilientComponent):
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
+                yield StatusMessage('[FAILURE] Fatal error caused exit!')
                 yield FunctionResult(results)
                 return
 
@@ -99,8 +100,8 @@ class FunctionComponent(ResilientComponent):
                     # Abort after DAYS_UNTIL_TIMEOUT
                     if sensor.status != "Online" or (os.path.exists(lock_file) and lock_acquired is False):
                         yield StatusMessage('[FATAL ERROR] Hostname: ' + str(hostname) + ' is still offline!')
-                        yield FunctionResult(results)
-                        return
+                        yield StatusMessage('[FAILURE] Fatal error caused exit!')
+                        break
 
                     # Check if the sensor is queued to restart, wait up to 90 seconds before continuing
                     three_minutes_passed = datetime.datetime.now() + datetime.timedelta(minutes=3)
@@ -118,7 +119,7 @@ class FunctionComponent(ResilientComponent):
                         else:
                             log.info('[FATAL ERROR] Incident ID ' + str(incident_id) + ' could not be reached, Resilient instance may be down.')
                             log.info('[FAILURE] Fatal error caused exit!')
-                        return
+                        break
 
                     # Acquire host lock
                     if lock_acquired is False:
@@ -173,7 +174,6 @@ class FunctionComponent(ResilientComponent):
                     if len(av_paths) == 0:
                         yield StatusMessage('[ERROR] Neither Windows Defender nor Microsoft Security Client were detected.')
                         yield StatusMessage('[FAILURE] Signatures were neither cleaned nor updated!')
-                        results["was_successful"] = False
                         try: session.close()
                         except: pass
                         break

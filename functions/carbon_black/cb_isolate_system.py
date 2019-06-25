@@ -3,7 +3,7 @@
 
 # This function will isolate an endpoint via Carbon Black.
 # File: cb_isolate_system.py
-# Date: 03/26/2019 - Modified: 03/26/2019
+# Date: 03/26/2019 - Modified: 06/25/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -40,6 +40,7 @@ class FunctionComponent(ResilientComponent):
         results = {}
         results["was_successful"] = False
         results["hostname"] = None
+        is_successful = False
 
         try:
             # Get the function parameters:
@@ -53,6 +54,7 @@ class FunctionComponent(ResilientComponent):
 
             if len(sensor) <= 0:  # Host does not have CB agent, abort
                 yield StatusMessage("[FATAL ERROR] CB could not find hostname: " + str(hostname))
+                yield StatusMessage('[FAILURE] Fatal error caused exit!')
                 yield FunctionResult(results)
                 return
 
