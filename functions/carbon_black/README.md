@@ -14,6 +14,7 @@
 | cb_notify_when_host_comes_online | Return when an endpoint appears online or a max_days value is reached. |
 | cb_refresh_av_signatures | Removes all Microsoft Security Client and/or Windows Defender signature definitions and then updates them on an endpoint. |
 | cb_remove_system_isolation | Remove isolation from an endpoint via Carbon Black. |
+| cb_retrieve_active_network_connections | Retrieve the active network connections from an endpoint in a CSV file. |
 | cb_retrieve_autoruns | Retrieve the autoruns from an endpoint in a CSV file. |
 | cb_retrieve_av_logs | Retrieve the Microsoft Security Client and/or Windows Defender AV logs from an endpoint in a ZIP file. |
 | cb_retrieve_browsing_history | Retrieve the browsing history from an endpoint in an HTML file. Uses this utility:<br/>BrowsingHistoryView: https://www.nirsoft.net/utils/browsing_history_view.html  |
@@ -21,6 +22,8 @@
 | cb_retrieve_file_or_directory | Retrieve a file or directory from an endpoint in a ZIP file. |
 | cb_retrieve_installed_programs | Retrieve the installed programs from an endpoint in a CSV file. |
 | cb_retrieve_logged_in_users | Retrieve the users currently logged from an endpoint in a CSV file. |
+| cb_retrieve_network_routing_data | Retrieve the network routing table and the network interfaces from an endpoint in a TXT file. |
+| cb_retrieve_network_routing_data | Retrieve the prefetch files from an endpoint in a ZIP file and a listing of them in a CSV file. |
 | cb_retrieve_process_list | Retrieve currently running processes and corresponding process details from an endpoint in a CSV file. |
 | cb_retrieve_scheduled_tasks | Retrieve the scheduled tasks from an endpoint in a CSV file. |
 | cb_retrieve_services | Retrieve the services from an endpoint in a CSV file. |
