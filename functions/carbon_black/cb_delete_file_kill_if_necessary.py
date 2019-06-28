@@ -3,7 +3,7 @@
 
 # This function will delete an absolute-path file or directory from an endpoint, found processes will be killed prior to deletion.
 # File: cb_delete_file_kill_if_necessary.py
-# Date: 03/18/2019 - Modified: 06/25/2019
+# Date: 03/18/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -166,7 +166,7 @@ class FunctionComponent(ResilientComponent):
                             session.delete_file(e)  # Delete the executable file
                             deleted.append(e)
                             yield StatusMessage('[INFO] Deleted: ' + e)
-                        except TimeoutError: raise TimeoutError(message=err)
+                        except TimeoutError: raise
                         except: yield StatusMessage('[ERROR] Deletion failed for: ' + e)
 
                     for o in other_files:  # For each non-executable file
@@ -174,7 +174,7 @@ class FunctionComponent(ResilientComponent):
                             session.delete_file(o)  # Delete the file
                             deleted.append(o)
                             yield StatusMessage('[INFO] Deleted: ' + o)
-                        except TimeoutError: raise TimeoutError(message=err)
+                        except TimeoutError: raise
                         except: yield StatusMessage('[ERROR] Deletion failed for: ' + o)
 
                     if count == 0:  # path_or_file was a file
@@ -182,7 +182,7 @@ class FunctionComponent(ResilientComponent):
                             session.delete_file(path_or_file)  # Delete the file
                             deleted.append(path_or_file)
                             yield StatusMessage('[INFO] Deleted: ' + path_or_file)
-                        except TimeoutError: raise TimeoutError(message=err)
+                        except TimeoutError: raise
                         except: yield StatusMessage('[ERROR] Deletion failed for: ' + path_or_file)
 
                 except TimeoutError:  # Catch TimeoutError and handle

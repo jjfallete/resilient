@@ -4,7 +4,7 @@
 # This function will retrieve browsing history from an endpoint as an HTML data file.
 #   Uses this utility-- BrowsingHistoryView: https://www.nirsoft.net/utils/browsing_history_view.html
 # File: cb_retrieve_browsing_history.py
-# Date: 03/28/2019 - Modified: 06/25/2019
+# Date: 03/28/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -26,6 +26,7 @@ import carbon_black.util.selftest as selftest
 cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
+
 PATH_TO_UTILITY = '/home/integrations/ir-tools/BrowsingHistoryView.exe'  # The integration server's absolute file path to the BrowsingHistoryView.exe utility
 
 
@@ -138,16 +139,16 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    try: session.create_directory('C:\Windows\CarbonBlack\Reports')
-                    except TimeoutError: raise TimeoutError(message=err)
+                    try: session.create_directory(r'C:\Windows\CarbonBlack\Reports')
+                    except TimeoutError: raise
                     except Exception: pass  # Existed already
 
                     try: session.create_directory(r'C:\Windows\CarbonBlack\Tools')
-                    except TimeoutError: raise TimeoutError(message=err)
+                    except TimeoutError: raise
                     except Exception: pass  # Existed already
 
                     try: session.delete_file(r'C:\Windows\CarbonBlack\Tools\BHV.exe')
-                    except TimeoutError: raise TimeoutError(message=err)
+                    except TimeoutError: raise
                     except Exception: pass  # Didn't exist already
 
                     session.put_file(open(PATH_TO_UTILITY, 'rb'), r'C:\Windows\CarbonBlack\Tools\BHV.exe')  # Place the utility on the endpoint
