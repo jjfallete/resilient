@@ -25,6 +25,7 @@
 | cb_retrieve_network_routing_data | Retrieve the network routing table and the network interfaces from an endpoint in a TXT file. |
 | cb_retrieve_network_routing_data | Retrieve the prefetch files from an endpoint in a ZIP file and a listing of them in a CSV file. |
 | cb_retrieve_process_list | Retrieve currently running processes and corresponding process details from an endpoint in a CSV file. |
+| cb_retrieve_registry_hives | Retrieve the registry hives from an endpoint in a ZIP file. |
 | cb_retrieve_scheduled_tasks | Retrieve the scheduled tasks from an endpoint in a CSV file. |
 | cb_retrieve_services | Retrieve the services from an endpoint in a CSV file. |
 | cb_retrieve_system_information | Retrieve current system information from an endpoint in a CSV file. No CBLR occurs. |
