@@ -3,7 +3,7 @@
 
 # This function will retrieve the scheduled tasks from an endpoint in a CSV file.
 # File: cb_retrieve_scheduled_tasks.py
-# Date: 04/14/2019 - Modified: 06/25/2019
+# Date: 04/14/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -136,6 +136,10 @@ class FunctionComponent(ResilientComponent):
                     yield StatusMessage('[INFO] Establishing session to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
+
+                    try: session.create_directory(r'C:\Windows\CarbonBlack\Reports')
+                    except TimeoutError: raise
+                    except Exception: pass  # Existed already
 
                     # Collect the scheduled tasks via Schtasks into a CSV, store the CSV in a tempfile, and post it to the incident as an attachment
                     session.create_process(r'cmd.exe /c schtasks.exe /query /v /fo CSV > "C:\Windows\CarbonBlack\Reports\scheduled_tasks.csv"', True, None, None, 300, True)

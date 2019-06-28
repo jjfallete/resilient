@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # pragma pylint: disable=unused-argument, no-self-use
 
-# This function will retrieve the network routing table and network data from an endpoint in a TXT file.
+# This function will retrieve the network routing table and the network interfaces from an endpoint in a TXT file.
 # File: cb_retrieve_network_routing_data.py
-# Date: 06/26/2019 - Modified: 06/26/2019
+# Date: 06/26/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""

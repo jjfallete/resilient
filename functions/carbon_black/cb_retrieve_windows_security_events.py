@@ -3,7 +3,7 @@
 
 # This function will retrieve the Windows Security event logs from an endpoint in a TXT file.
 # File: cb_retrieve_windows_security_events.py
-# Date: 04/16/2019 - Modified: 06/25/2019
+# Date: 04/16/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -143,7 +143,7 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    try: session.create_directory('C:\Windows\CarbonBlack\Reports')
+                    try: session.create_directory(r'C:\Windows\CarbonBlack\Reports')
                     except TimeoutError: raise
                     except Exception: pass  # Existed already
 

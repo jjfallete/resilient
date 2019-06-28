@@ -3,7 +3,7 @@
 
 # This function will retrieve the Microsoft Security Client and/or Windows Defender Windows event logs from an endpoint in corresponding TXT files.
 # File: cb_retrieve_windows_av_events.py
-# Date: 04/15/2019 - Modified: 06/25/2019
+# Date: 04/15/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -141,7 +141,7 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    try: session.create_directory('C:\Windows\CarbonBlack\Reports')
+                    try: session.create_directory(r'C:\Windows\CarbonBlack\Reports')
                     except TimeoutError: raise
                     except Exception: pass  # Existed already
 

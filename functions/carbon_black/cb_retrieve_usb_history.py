@@ -5,7 +5,7 @@
 #   Uses these utilities-- USBDeview: https://www.nirsoft.net/utils/usb_devices_view.html
 #                          DriverView: https://www.nirsoft.net/utils/driverview.html
 # File: cb_retrieve_usb_history.py
-# Date: 04/14/2019 - Modified: 06/25/2019
+# Date: 04/14/2019 - Modified: 06/28/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -28,6 +28,7 @@ import carbon_black.util.selftest as selftest
 cb = CbEnterpriseResponseAPI()  # CB Response API
 MAX_TIMEOUTS = 3  # The number of CB timeouts that must occur before the function aborts
 DAYS_UNTIL_TIMEOUT = 3  # The number of days that must pass before the function aborts
+
 PATH_TO_UTILITY_1 = '/home/integrations/ir-tools/USBDeview.exe'  # The integration server's absolute file path to the USBDeview.exe utility
 PATH_TO_UTILITY_2 = '/home/integrations/ir-tools/DriveLetterView.exe'  # The integration server's absolute file path to the DriveLetterView.exe utility
 
@@ -141,7 +142,7 @@ class FunctionComponent(ResilientComponent):
                     session = cb.live_response.request_session(sensor.id)
                     yield StatusMessage('[SUCCESS] Connected on Session #' + str(session.session_id) + ' to CB Sensor #' + str(sensor.id) + ' (' + sensor.hostname + ')')
 
-                    try: session.create_directory('C:\Windows\CarbonBlack\Reports')
+                    try: session.create_directory(r'C:\Windows\CarbonBlack\Reports')
                     except TimeoutError: raise
                     except Exception: pass  # Existed already
 
