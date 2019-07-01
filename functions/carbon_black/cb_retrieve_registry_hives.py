@@ -165,9 +165,7 @@ class FunctionComponent(ResilientComponent):
 
                     session.put_file(open(PATH_TO_SCRIPT, 'rb'), r'C:\Windows\CarbonBlack\Tools\RegistryCapture.ps1')  # Place the script on the endpoint
 
-                    x64 = [2, 3, 5, 8, 11, 12, 15, 26, 30, 31]
-
-                    if sensor.os_environment_id in x64:
+                    if '64-bit' in sensor.os_environment_display_string:
                         session.put_file(open(PATH_TO_RAWCOPY_x64, 'rb'), r'C:\Windows\CarbonBlack\Tools\RawCopy.exe')  # Place sysmon on the endpoint
                     else:
                         session.put_file(open(PATH_TO_RAWCOPY, 'rb'), r'C:\Windows\CarbonBlack\Tools\RawCopy.exe')  # Place sysmon on the endpoint
