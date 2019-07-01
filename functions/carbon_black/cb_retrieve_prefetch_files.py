@@ -157,7 +157,7 @@ class FunctionComponent(ResilientComponent):
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved CSV data file from Sensor!')
                             self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_file.name, '{0}-prefetch.csv'.format(sensor.hostname))  # Post temp_file to incident
-                            yield StatusMessage('[SUCCESS] Posted CSV data file to the incident as an attachment!')
+                            yield StatusMessage('[SUCCESS] Posted a CSV data file to the incident as an attachment!')
 
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file
@@ -184,11 +184,11 @@ class FunctionComponent(ResilientComponent):
 
                             if os.stat(temp_zip.name).st_size <= MAX_UPLOAD_SIZE:
                                 self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-prefetch_files.zip'.format(sensor.hostname))  # Post temp_zip to incident
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of prefetch files to the incident as an attachment!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the prefetch files to the incident as an attachment!')
                             else:
                                 if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
                                 shutil.copyfile(temp_zip.name, '/mnt/cyber-sec-forensics/Resilient/{0}/{1}-prefetch_files-{2}.zip'.format(incident_id, sensor.hostname, str(int(time.time()))))  # Post temp_zip to network share
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of prefetch files to the forensics network share!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the prefetch files to the forensics network share!')
 
                         finally:
                             os.unlink(temp_zip.name)  # Delete temporary temp_file

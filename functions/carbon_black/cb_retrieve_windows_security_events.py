@@ -156,7 +156,7 @@ class FunctionComponent(ResilientComponent):
 
                     with tempfile.NamedTemporaryFile(delete=False) as temp_file:  # Create temporary temp_file for TXT file
                         try:
-                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Security_Events.txt', timeout=custom_timeout))  # Write the HTML file from the endpoint to temp_file
+                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Security_Events.txt', timeout=custom_timeout))  # Write the file from the endpoint to temp_file
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved Windows Security events data file from Sensor!')
 

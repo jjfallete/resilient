@@ -189,7 +189,7 @@ class FunctionComponent(ResilientComponent):
 
                             yield StatusMessage('[SUCCESS] Retrieved process data file from Sensor!')
                             self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_file.name, '{0}-running_processes.csv'.format(sensor.hostname))  # Post temp_file to incident
-                            yield StatusMessage('[SUCCESS] Posted CSV data file to the incident as an attachment!')
+                            yield StatusMessage('[SUCCESS] Posted a CSV data file to the incident as an attachment!')
 
                         finally:
                             os.unlink(temp_file.name)  # Delete temporary temp_file

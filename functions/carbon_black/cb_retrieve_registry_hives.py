@@ -211,11 +211,11 @@ class FunctionComponent(ResilientComponent):
 
                             if os.stat(temp_zip.name).st_size <= MAX_UPLOAD_SIZE:
                                 self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}.zip'.format(os.path.basename(output_directory.rstrip(os.sep))))  # Post temp_zip to incident
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of registry hives to the incident as an attachment!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the registry hives to the incident as an attachment!')
                             else:
                                 if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
                                 shutil.copyfile(temp_zip.name, '/mnt/cyber-sec-forensics/Resilient/{0}/{1}.zip'.format(incident_id, os.path.basename(output_directory.rstrip(os.sep))))  # Post temp_zip to network share
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of registry hives to the forensics network share!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the registry hives to the forensics network share!')
 
                         finally:
                             temp_zip.close()

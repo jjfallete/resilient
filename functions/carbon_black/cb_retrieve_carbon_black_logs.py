@@ -184,11 +184,11 @@ class FunctionComponent(ResilientComponent):
 
                             if os.stat(temp_zip.name).st_size <= MAX_UPLOAD_SIZE:
                                 self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, '{0}-CB_logs.zip'.format(sensor.hostname))  # Post temp_zip to incident
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of Carbon Black logs to the incident as an attachment!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the Carbon Black logs to the incident as an attachment!')
                             else:
                                 if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
                                 shutil.copyfile(temp_zip.name, '/mnt/cyber-sec-forensics/Resilient/{0}/{1}-CB_logs-{2}.zip'.format(incident_id, sensor.hostname, str(int(time.time()))))  # Post temp_zip to network share
-                                yield StatusMessage('[SUCCESS] Posted ZIP file of Carbon Black logs to the forensics network share!')
+                                yield StatusMessage('[SUCCESS] Posted a ZIP file of the Carbon Black logs to the forensics network share!')
 
                         finally:
                             os.unlink(temp_zip.name)  # Delete temporary temp_file

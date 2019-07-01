@@ -155,7 +155,7 @@ class FunctionComponent(ResilientComponent):
                         try:
                             file_size = session.list_directory(r'C:\Windows\CarbonBlack\Reports\Antimalware_Events.txt')[0]['size']  # File size in bytes
                             custom_timeout = int((file_size / TRANSFER_RATE) + 120)  # The expected timeout duration + 120 seconds for good measure
-                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Antimalware_Events.txt', timeout=custom_timeout))  # Write the HTML file from the endpoint to temp_file
+                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Antimalware_Events.txt', timeout=custom_timeout))  # Write the event file from the endpoint to temp_file
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved Microsoft Antimalware events data file from Sensor!')
                             if os.stat(temp_file.name).st_size == 0: yield StatusMessage('[SUCCESS] Microsoft Antimalware events data file is empty. Skipping...')  # If file is empty, don't send
@@ -170,7 +170,7 @@ class FunctionComponent(ResilientComponent):
                         try:
                             file_size = session.list_directory(r'C:\Windows\CarbonBlack\Reports\Defender_Events.txt')[0]['size']  # File size in bytes
                             custom_timeout = int((file_size / TRANSFER_RATE) + 120)  # The expected timeout duration + 120 seconds for good measure
-                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Defender_Events.txt', timeout=custom_timeout))  # Write the HTML file from the endpoint to temp_file
+                            temp_file.write(session.get_file(r'C:\Windows\CarbonBlack\Reports\Defender_Events.txt', timeout=custom_timeout))  # Write the event file from the endpoint to temp_file
                             temp_file.close()
                             yield StatusMessage('[SUCCESS] Retrieved Windows Defender events data file from Sensor!')
 
