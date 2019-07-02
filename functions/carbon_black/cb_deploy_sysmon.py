@@ -218,7 +218,7 @@ class FunctionComponent(ResilientComponent):
 
                             sysmon_uninstalled = True
                             yield StatusMessage('[SUCCESS] Removed Sysmon!')
-                            log.info('[DEBUG] Removal output was: \n' + output)
+                            # log.info('[DEBUG] Removal output was: \n' + output)
 
                         except TimeoutError: raise
 
@@ -286,7 +286,7 @@ class FunctionComponent(ResilientComponent):
 
                             sysmon_uninstalled = True
                             yield StatusMessage('[SUCCESS] Removed Sysmon!')
-                            log.info('[DEBUG] Removal output was: \n' + output)
+                            # log.info('[DEBUG] Removal output was: \n' + output)
 
                         except TimeoutError: raise
 
