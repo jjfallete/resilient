@@ -7,6 +7,7 @@
 | :------------- |:-------------|
 | cb_ban_md5_hash | Ban an MD5 hash in Carbon Black, preventing execution of the file on endpoints. |
 | cb_delete_file_kill_if_necessary | Delete an absolute-path file or directory from an endpoint, found processes will be killed prior to deletion. |
+| cb_deploy_sysmon | Deploy Sysmon (System Monitor) to an endpoint. Uses this utility:<br/>Sysmon: https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon |
 | cb_force_reboot_with_message | Force an endpoint to reboot in a specified number of minutes with a custom pop-up message. |
 | cb_function_base_starter | A basic Carbon Black function base for creating new functions. |
 | cb_isolate_system | Isolate an endpoint via Carbon Black. |
