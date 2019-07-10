@@ -2,7 +2,7 @@
 # pragma pylint: disable=unused-argument, no-self-use
 
 # This function will restart Resilient Circuits.
-# File: utility_restart_circuits.py
+# File: utility_restart_resilient_circuits.py
 # Date: 04/26/2019 - Modified: 07/10/2019
 # Author: Jared F
 
