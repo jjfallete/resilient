@@ -8,7 +8,7 @@
 
 """Function implementation"""
 #   @function -> utility_csv_to_json_structure
-#   @params -> integer: incident_id, string: text_string
+#   @params -> integer: incident_id, list of strings: csv_fields (optional), integer: attachment_id
 #   @return -> boolean: results['was_successful'], list of ordered dicts: results["json_data"], tuple: results["fieldnames"]
 
 import csv
@@ -45,7 +45,7 @@ class FunctionComponent(ResilientComponent):
             incident_id = kwargs.get("incident_id")  # number
             csv_fields = kwargs.get("csv_fields")  # text list (optional) (ie: inputs.csv_fields = "Name", "LastAccessTime", "CreationTime")
             attachment_id = kwargs.get("attachment_id")  # number
-            csv_filename = kwargs.get("attachment_name")  # text (not required at this time)
+            # csv_filename = kwargs.get("attachment_name")  # text (not required at this time)
 
             log = logging.getLogger(__name__)  # Establish logging
 
