@@ -3,6 +3,6 @@
 ## Script Details:
 
 ###
-| **Script Name** | **Script Use** |
-| :------------- |:-------------|
-| No submissions yet. | No submissions yet. |
+| **Workflow Script Name** | **Function** | **Script Use** |
+| :------------- |:-------------|:-------------|
+| Table Build | utility_csv_to_json_structure.py | Dynamically builds a data table from the JSON (dictionary) structure. |
