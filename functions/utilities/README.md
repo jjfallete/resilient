@@ -12,4 +12,4 @@
 
 
 ####
-[Find pre/post processing scripts here.](../../blob/master/workflow%20processor%20scripts)
+[Find pre/post processing scripts here.](../../workflow%20processor%20scripts)
