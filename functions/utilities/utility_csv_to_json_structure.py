@@ -3,12 +3,12 @@
 
 # This function will convert a CSV attachment into a JSON (dictionary) structure for use in table building.
 # File: utility_csv_to_json_structure.py
-# Date: 07/10/2019 - Modified: 07/10/2019
+# Date: 07/10/2019 - Modified: 07/11/2019
 # Author: Jared F
 
 """Function implementation"""
 #   @function -> utility_csv_to_json_structure
-#   @params -> integer: incident_id, list of strings: csv_fields (optional), integer: attachment_id
+#   @params -> integer: incident_id, integer: attachment_id, string: attachment_name, string list: csv_fields (optional), integer: row_limit (optional), integer: column_limit (optional)
 #   @return -> boolean: results['was_successful'], list of ordered dicts: results["json_data"], tuple: results["fieldnames"]
 
 import csv
@@ -43,9 +43,11 @@ class FunctionComponent(ResilientComponent):
         try:
             # Get the function parameters:
             incident_id = kwargs.get("incident_id")  # number
-            csv_fields = kwargs.get("csv_fields")  # text list (optional) (ie: inputs.csv_fields = "Name", "LastAccessTime", "CreationTime")
             attachment_id = kwargs.get("attachment_id")  # number
-            # csv_filename = kwargs.get("attachment_name")  # text (not required at this time)
+            csv_filename = kwargs.get("attachment_name")  # text (not required at this time)
+            csv_fields = kwargs.get("csv_fields")  # text list (optional) (ie: inputs.csv_fields = "Name", "LastAccessTime", "CreationTime")
+            row_limit = kwargs.get("row_limit")  # number (optional)
+            column_limit = kwargs.get("column_limit")  # number (optional)
 
             log = logging.getLogger(__name__)  # Establish logging
 
@@ -73,14 +75,20 @@ class FunctionComponent(ResilientComponent):
 
             # log.info('[DEBUG] Using csv_fields: ' + str(csv_fields))
 
-            yield StatusMessage('Converting CSV file data to JSON...')
+            yield StatusMessage('Converting {} data to JSON...'.format(csv_filename))
 
             csv_data = csv.DictReader(csv_file, fieldnames=csv_fields, dialect=csv_dialect, delimiter=csv_dialect.delimiter)
 
-            # Python 2 returns an unordered dictionary from csv.DictReader(), but using the fieldnames order, we can reorder like:
+            # Python 2 returns an unordered dictionary from csv.DictReader(), but using the order of fieldnames, we can reorder using OrderedDict and lambda
             order_maintained_rows = []
+            row_index = 0
             for row in csv_data:
-                order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0]))))
+                row_index += 1
+                if column_limit and int(column_limit) > row.items():
+                    order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0])))[:int(column_limit)])
+                else:
+                    order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0]))))
+                if row_limit and row_index >= int(row_limit): break
 
             results["json_data"] = order_maintained_rows
             results["fieldnames"] = csv_data.fieldnames
