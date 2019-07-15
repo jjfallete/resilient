@@ -3,7 +3,7 @@
 
 # This function will convert a CSV attachment into a JSON (dictionary) structure for use in table building.
 # File: utility_csv_to_json_structure.py
-# Date: 07/10/2019 - Modified: 07/11/2019
+# Date: 07/10/2019 - Modified: 07/15/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -77,12 +77,13 @@ class FunctionComponent(ResilientComponent):
 
             yield StatusMessage('Converting {} data to JSON...'.format(csv_filename))
 
-            csv_data = csv.DictReader(csv_file, fieldnames=csv_fields, dialect=csv_dialect, delimiter=csv_dialect.delimiter)
+            csv_data = csv.DictReader((line.replace('\0', '') for line in csv_file), fieldnames=csv_fields, dialect=csv_dialect, delimiter=csv_dialect.delimiter)
 
             # Python 2 returns an unordered dictionary from csv.DictReader(), but using the order of fieldnames, we can reorder using OrderedDict and lambda
             order_maintained_rows = []
             row_index = 0
             for row in csv_data:
+                if not any([value.strip() for value in row.values()]): continue  # Skip empty rows
                 row_index += 1
                 if column_limit and int(column_limit) > row.items():
                     order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0])))[:int(column_limit)])
