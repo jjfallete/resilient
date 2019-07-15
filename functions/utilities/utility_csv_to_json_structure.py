@@ -85,7 +85,7 @@ class FunctionComponent(ResilientComponent):
             for row in csv_data:
                 if not any([value.strip() for value in row.values()]): continue  # Skip empty rows
                 row_index += 1
-                if column_limit and int(column_limit) > row.items():
+                if column_limit and int(column_limit) < row.items():
                     order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0])))[:int(column_limit)])
                 else:
                     order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0]))))
