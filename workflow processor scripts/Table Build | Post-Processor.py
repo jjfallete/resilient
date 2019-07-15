@@ -22,7 +22,7 @@ if len(rows) != 0:  # If the CSV contained at least one row
 
     for column_index in range(len(row)):  # For each column (property) in the row
     
-      column_api_name = str(column_labels[column_index]).lower().replace(' ', '_').strip()  # Convert the column label to the table's API column name
+      column_api_name = str(column_labels[column_index]).lower().replace(' ', '_').replace('-', '').strip()  # Convert the column label to the table's API column name
       row_data_for_column = str(row[column_labels[column_index]])  # Get the row's data for the column of the row (cell value)
       
       table_row[column_api_name] = row_data_for_column  # Write to the row's proper column (cell)
