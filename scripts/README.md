@@ -5,4 +5,4 @@
 ###
 | **Script Name** | **Script Use** |
 | :------------- |:-------------|
-| No submissions yet. | No submissions yet. |
+| [Email Parser] 'Resilient Incident ID' Reference Parser | Turns an incident-related reply email to Resilient into a note on the corresponding incident. |
