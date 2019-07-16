@@ -3,7 +3,7 @@
 
 # This function will convert a CSV attachment into a JSON (dictionary) structure for use in table building.
 # File: utility_csv_to_json_structure.py
-# Date: 07/10/2019 - Modified: 07/15/2019
+# Date: 07/10/2019 - Modified: 07/16/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -65,9 +65,9 @@ class FunctionComponent(ResilientComponent):
                 elif '[' in csv_fields: csv_fields = tuple([row.strip(' ') for row in csv_fields.strip('][').split(',')])
                 else: csv_fields = tuple(csv_fields)
 
-            # If csv_fields is not provided, use the first row as the keys
+            # If csv_fields is not provided
             if not csv_fields:
-                csv_fields = None
+                csv_fields = None  # Use first row as keys
 
             # If csv_fields is the same as the first row of the data
             if csv_fields == (csv_file_data.partition('\n')[0]):
@@ -77,7 +77,7 @@ class FunctionComponent(ResilientComponent):
 
             yield StatusMessage('Converting {} data to JSON...'.format(csv_filename))
 
-            csv_data = csv.DictReader((line.replace('\0', '') for line in csv_file), fieldnames=csv_fields, dialect=csv_dialect, delimiter=csv_dialect.delimiter)
+            csv_data = csv.DictReader((line.replace('\0', '') for line in csv_file), fieldnames=csv_fields, dialect='excel', delimiter=csv_dialect.delimiter)
 
             # Python 2 returns an unordered dictionary from csv.DictReader(), but using the order of fieldnames, we can reorder using OrderedDict and lambda
             order_maintained_rows = []
@@ -86,7 +86,7 @@ class FunctionComponent(ResilientComponent):
                 if not any([value.strip() for value in row.values()]): continue  # Skip empty rows
                 row_index += 1
                 if column_limit and int(column_limit) < row.items():
-                    order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0])))[:int(column_limit)])
+                    order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0]))[:int(column_limit)]))
                 else:
                     order_maintained_rows.append(OrderedDict(sorted(row.items(), key=lambda item: csv_data.fieldnames.index(item[0]))))
                 if row_limit and row_index >= int(row_limit): break
