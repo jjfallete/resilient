@@ -12,6 +12,7 @@
 #   @return -> boolean: results['was_successful'], list of ordered dicts: results["json_data"]
 
 import logging
+import unicodedata
 from cStringIO import StringIO
 from resilient_lib import get_file_attachment
 from resilient_circuits import ResilientComponent, function, handler, StatusMessage, FunctionResult, FunctionError
@@ -52,7 +53,7 @@ class FunctionComponent(ResilientComponent):
 
             # Get the TXT file attachment by its incident and attachment IDs
             txt_file_data = get_file_attachment(self.rest_client(), incident_id, artifact_id=None, task_id=None, attachment_id=attachment_id)
-            txt_file = StringIO(txt_file_data)
+            txt_file = StringIO(unicodedata.normalize("NFKD", txt_file_data.decode('utf-8', 'ignore')))
 
             txt_data = []
 
