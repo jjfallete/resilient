@@ -9,6 +9,7 @@
 | utility_ioc_extractor | Extracts IPv4s, IPv6s, URLs, the domains of each URL, email addresses, the domains of each email address, MD5 hashes, and SHA256 hashes from a text string. |
 | utility_sleep | Sleeps during a workflow for time_in_seconds (passed in as input). |
 | utility_restart_resilient_circuits | Restarts Resilient Circuits. |
+| utility_txt_to_json | Converts a TXT attachment into a JSON (dictionary) structure for use in table building. |
 
 ####
 [Pre and post processing scripts are available here.](../../workflow%20processor%20scripts)
