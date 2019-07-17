@@ -3,7 +3,7 @@
 
 # This function will convert a CSV attachment into a JSON (dictionary) structure for use in table building.
 # File: utility_csv_to_json_structure.py
-# Date: 07/10/2019 - Modified: 07/16/2019
+# Date: 07/10/2019 - Modified: 07/17/2019
 # Author: Jared F
 
 """Function implementation"""
@@ -13,6 +13,7 @@
 
 import csv
 import logging
+import unicodedata
 from cStringIO import StringIO
 from collections import OrderedDict
 from resilient_lib import get_file_attachment
@@ -53,7 +54,7 @@ class FunctionComponent(ResilientComponent):
 
             # Get the CSV file attachment by its incident and attachment IDs
             csv_file_data = get_file_attachment(self.rest_client(), incident_id, artifact_id=None, task_id=None, attachment_id=attachment_id)
-            csv_file = StringIO(csv_file_data)
+            csv_file = StringIO(unicodedata.normalize("NFKD", csv_file_data.decode('utf-8', 'ignore')))
             csv_dialect = csv.Sniffer().sniff(csv_file.readline())
             csv_file.seek(0)
 
