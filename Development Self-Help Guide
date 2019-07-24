@@ -1,0 +1,159 @@
+Create function in UI:
+	1. Under "Customization Settings" > "Functions" > "New Function"
+	
+	2. Use a name like: "[Carbon Black] Run AV Scan" ... leave the API Name as what is auto-generated. Square brackets help for display listing organization.
+	
+	3. Select the appropriate message destination (create one per package for ease). Ex: use "Carbon Black" for CB functions.
+	
+	4. Add by drag-and-drop "Input Fields" to "Inputs" - Always include "incident_id" as well as other IDs and names as applicable.
+	
+	
+Create Workflow for new function in UI:
+	1. Under "Customization Settings" > "Workflows" > "New Workflow"
+	
+	2. Use the exact same name as the function.
+	
+	3. Append workflow_ to the start of the API name (ex: workflow_function_api_name)
+	
+	4. Select type as "Artifact" ... the action will run off of a "System Name" artifact.
+	
+	5. Map three connected items in the following order (Left to Right): 'Start Event' > 'Function' (select proper function) > 'End Event'
+	
+		- Leave the "Input Parameters" from the "Input" tab blank.
+		
+		- Enter inputs like seen in the following two example lines (unindented) into the "Pre-Process Script" tab:
+			inputs.incident_id = incident.id
+			inputs.hostname = artifact.value
+			
+		- Enter the following as the "Output Name" from the "Output" tab, change function_api_name to match the function API name: function_api_name_results
+
+		- Enter the following (unindented) into the "Post-Process Script" tab, for easy testing of result output:
+			incident.addNote(str(results))			
+	
+			
+Export the Resilient Server settings and configuration in the UI:
+	1. Under "Administrator Settings" > "Organization" > "Export"
+	
+	2. Export all settings (click all checkboxes)
+	
+	3. Download the .res file
+	
+		-> If the integration server is connected to the Cloud (STOMP connection active):
+			
+				- Delete the locally saved .res file, the connection sent it to the integration server automatically.
+			
+		-> If the integration server is NOT connected to the Cloud (STOMP connection inactive):
+	
+				- Upload the .res file to the integrations server (place in "/home/integrations/functions"), 
+	
+			
+Build the function:
+
+	1. Change to the functions directory (create if first time) via:
+		cd /home/integrations/functions
+
+
+	2. Run the following command on the integrations server (see NOTE prior to running command):
+	
+		-> If the integration server is connected to the Cloud (STOMP connection active):
+				resilient-circuits codegen --package package_name --function function_api_name
+		
+		-> If the integration server is NOT connected to the Cloud (STOMP connection inactive):
+				resilient-circuits codegen --package package_name --function function_api_name --exportfile export-ORG_NAME-TIMESTAMP_STRING.res
+				
+		NOTE:
+			- Change package_name to match the package name (ex: carbon_black). See step 5 for creating a new package.
+			- Change function_api_name to match the function API name. 
+			- If applicable, change the export-Allete-string to match the export .res file name:
+		
+	
+	3. Modify the function_api_name.py script located in: /home/integrations/functions/package_name/package_name/components
+		
+			- All print() uses should be replaced with log.info()
+			
+			- The following should be added to the global section of the script:
+				from cbapi.response import CbEnterpriseResponseAPI, Sensor
+				c = CbEnterpriseResponseAPI()
+				results = {}
+				
+				
+	4. Modify the setup.py script located in: /home/integrations/functions/package_name/
+		
+			5-1. Locate entry_points={
+						"resilient.circuits.components": [
+			
+			5-2. Within the resilient.circuits.components list, add a comma to the last FunctionComponent listing.
+			
+			5-3. Add a new line directly below that (from above) with the following:
+				
+				"FunctionAPINameFunctionComponent = utilities.components.function_api_name:FunctionComponent"
+				
+			
+				NOTE:
+					- Change FunctionAPIName to match the function API name, but do not use _ symbols and start each word with a capital letter.
+					- Change function_api_name to match the function API name.
+					
+				Here is an example of what it will look like afterwards (note, there is no comma after the last item in resilient.circuits.components:
+				
+					entry_points={
+						"resilient.circuits.components": [
+							"WorkflowUtilityGetIncidentNotesFunctionComponent = utilities.components.workflow_utility_get_incident_notes:FunctionComponent",
+							"WorkflowUtilityGetTaskNotesFunctionComponent = utilities.components.workflow_utility_get_task_notes:FunctionComponent",
+							"WorkflowUtilityDoSomethingFunctionComponent = utilities.components.workflow_utility_do_something:FunctionComponent"
+						],
+       
+			
+
+	5. Run the following commands to apply the function or create the package:
+	
+		sudo pip install --editable /home/integrations/functions/package_name
+
+		sudo systemctl restart resilient_circuits.service
+		
+
+Create a "Rule" for the new function in the UI:
+	1. Under "Customization Settings" > "Rules" > "New Rule" > "Menu Item"
+	
+	2. Use the exact same name as the function.
+	
+	3. Select type as "Artifact"
+	
+	4. "Add New" condition as follows: "Type" "is equal to" "System Name:
+	
+	5. Select the proper workflow and destination.
+	
+
+Test the function:
+	1. Test the action, verify it shows "Completed" in the "Action Status" dropdown from the incident.
+	
+	2. To debug errors, the following command may be useful, it displays the last 50 lines from the service output:
+		sudo systemctl status resilient_circuits.service -l --lines=500          ... This will vary depending on how resilient-circuits auto-start service was created. 
+		
+		
+Additional Resources:
+	https://developer.ibm.com/security/resilient/functions/
+	
+	
+
+======================================================================================================================================================================================
+======================================================================================================================================================================================
+======================================================================================================================================================================================
+======================================================================================================================================================================================
+======================================================================================================================================================================================
+
+
+
+
+
+Installing packages the default way (prefer development installs via --editable, contact Resilient Support for guidance):
+
+	
+	sudo pip install --upgrade pkg_name-1.0.0.tar.gz
+	
+	resilient-circuits config -u
+	
+	resilient-circuits customize -l pkg_name (do not include version number!)
+	
+	sudo systemctl restart resilient_circuits.service               ... This will vary depending on how resilient-circuits auto-start service was created. 
+	
+	Modify "app.config" in "/home/integrations/.resilient" see the [pkg_name] in the configuration to begin.
