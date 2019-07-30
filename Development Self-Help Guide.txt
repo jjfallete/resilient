@@ -15,7 +15,7 @@ Create Workflow for new function in UI:
 	
 	3. Append workflow_ to the start of the API name. Ex: workflow_function_api_name (optional, just for ease).
 	
-	4. Select type as "Artifact" ... the action will run off of a "System Name" artifact.
+	4. Select type as "Artifact" (if running off an artifact) ... Ex: "artifact" if the action will run on a "System Name" artifact.
 	
 	5. Map three connected items in the following order (Left to Right): 'Start Event' > 'Function' (select proper function) > 'End Event'
 	
