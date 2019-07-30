@@ -11,7 +11,7 @@ Create function in UI:
 Create Workflow for new function in UI:
 	1. Under "Customization Settings" > "Workflows" > "New Workflow"
 	
-	2. Use the exact same name as the function.
+	2. Use the exact same name as the function (optional, just for ease).
 	
 	3. Append workflow_ to the start of the API name (ex: workflow_function_api_name)
 	
