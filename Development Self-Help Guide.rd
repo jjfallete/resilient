@@ -1,24 +1,25 @@
-Create function in UI:
+### Creating a custom (action): ###
+
+Create a function in the UI:
 	1. Under "Customization Settings" > "Functions" > "New Function"
 	
 	2. Use a name like: "[Carbon Black] Run AV Scan" ... leave the API Name as what is auto-generated. Square brackets help for display listing organization.
 	
-	3. Select the appropriate message destination (create one per package for ease). Ex: use "Carbon Black" for CB functions.
+	3. Select the appropriate message destination (create one per package for ease). Ex: use "Carbon Black" for all CB functions.
 	
-	4. Add by drag-and-drop "Input Fields" to "Inputs" - Always include "incident_id" as well as other IDs and names as applicable.
+	4. Add by drag-and-drop "Input Fields" to "Inputs" - Always include "incident_id" as well as other IDs and names as required.
 	
 	
-Create Workflow for new function in UI:
+Create a workflow for new function in the UI:
 	1. Under "Customization Settings" > "Workflows" > "New Workflow"
 	
 	2. Use the exact same name as the function (optional, just for ease).
 	
 	3. Append workflow_ to the start of the API name. Ex: workflow_function_api_name (optional, just for ease).
 	
-	4. Select type as "Artifact" (if running off an artifact) ... Ex: "artifact" if the action will run on a "System Name" artifact.
+	4. Select the appropriate type. For example, use "Artifact" if running the action off of an artifact such as "System Name."
 	
 	5. Map three connected items in the following order (Left to Right): 'Start Event' > 'Function' (select proper function) > 'End Event'
-	
 		- Leave the "Input Parameters" from the "Input" tab blank.
 		
 		- Enter inputs like seen in the following two example lines (unindented) into the "Pre-Process Script" tab:
@@ -70,41 +71,9 @@ Build the function:
 	3. Modify the function_api_name.py script located in: /home/integrations/functions/package_name/package_name/components
 		
 			- All print() uses should be replaced with log.info()
-			
-			- The following should be added to the global section of the script:
-				from cbapi.response import CbEnterpriseResponseAPI, Sensor
-				c = CbEnterpriseResponseAPI()
-				results = {}
 				
-				
-	4. Modify the setup.py script located in: /home/integrations/functions/package_name/
-		
-			5-1. Locate entry_points={
-						"resilient.circuits.components": [
-			
-			5-2. Within the resilient.circuits.components list, add a comma to the last FunctionComponent listing.
-			
-			5-3. Add a new line directly below that (from above) with the following:
-				
-				"FunctionAPINameFunctionComponent = utilities.components.function_api_name:FunctionComponent"
-				
-			
-				NOTE:
-					- Change FunctionAPIName to match the function API name, but do not use _ symbols and start each word with a capital letter.
-					- Change function_api_name to match the function API name.
-					
-				Here is an example of what it will look like afterwards (note, there is no comma after the last item in resilient.circuits.components:
-				
-					entry_points={
-						"resilient.circuits.components": [
-							"WorkflowUtilityGetIncidentNotesFunctionComponent = utilities.components.workflow_utility_get_incident_notes:FunctionComponent",
-							"WorkflowUtilityGetTaskNotesFunctionComponent = utilities.components.workflow_utility_get_task_notes:FunctionComponent",
-							"WorkflowUtilityDoSomethingFunctionComponent = utilities.components.workflow_utility_do_something:FunctionComponent"
-						],
-       
-			
 
-	5. Run the following commands to apply the function or create the package:
+	4. Run the following commands to apply the function or create the package:
 	
 		sudo pip install --editable /home/integrations/functions/package_name
 
@@ -116,9 +85,10 @@ Create a "Rule" for the new function in the UI:
 	
 	2. Use the exact same name as the function.
 	
-	3. Select type as "Artifact"
+	3. Select the same type as was selected in Step #4 of the workflow creation.
 	
-	4. "Add New" condition as follows: "Type" "is equal to" "System Name:
+	4. Add approrpiate conditions as necessary in which to allow the action to be available (shown).
+		For example: "Add New" condition as follows: "Type" "is equal to" "System Name":
 	
 	5. Select the proper workflow and destination.
 	
@@ -127,25 +97,21 @@ Test the function:
 	1. Test the action, verify it shows "Completed" in the "Action Status" dropdown from the incident.
 	
 	2. To debug errors, the following command may be useful, it displays the last 50 lines from the service output:
-		sudo systemctl status resilient_circuits.service -l --lines=500          ... This will vary depending on how resilient-circuits auto-start service was created. 
+		sudo systemctl status resilient_circuits.service -l --lines=500
 		
 		
 Additional Resources:
 	https://developer.ibm.com/security/resilient/functions/
 	
 	
+	
 
-======================================================================================================================================================================================
-======================================================================================================================================================================================
-======================================================================================================================================================================================
-======================================================================================================================================================================================
-======================================================================================================================================================================================
+============================================================================================
 
+### Using a pre-built package: ###
 
 
-
-
-Installing packages the default way (prefer development installs via --editable, contact Resilient Support for guidance):
+Installing pre-built packages the default way (prefer development installs via --editable, contact Resilient Support for guidance):
 
 	
 	sudo pip install --upgrade pkg_name-1.0.0.tar.gz
@@ -154,6 +120,8 @@ Installing packages the default way (prefer development installs via --editable,
 	
 	resilient-circuits customize -l pkg_name (do not include version number!)
 	
-	sudo systemctl restart resilient_circuits.service               ... This will vary depending on how resilient-circuits auto-start service was created. 
+	sudo systemctl restart resilient_circuits.service
 	
 	Modify "app.config" in "/home/integrations/.resilient" see the [pkg_name] in the configuration to begin.
+	
+	sudo systemctl restart resilient_circuits.service
