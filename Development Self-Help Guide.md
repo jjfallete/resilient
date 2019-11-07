@@ -2,11 +2,8 @@
 
 Create a function in the UI:
 	1. Under "Customization Settings" > "Functions" > "New Function"
-	
 	2. Use a name like: "[Carbon Black] Run AV Scan" ... leave the API Name as what is auto-generated. Square brackets help for display listing organization.
-	
 	3. Select the appropriate message destination (create one per package for ease). Ex: use "Carbon Black" for all CB functions.
-	
 	4. Add by drag-and-drop "Input Fields" to "Inputs" - Always include "incident_id" as well as other IDs and names as required.
 	
 	
