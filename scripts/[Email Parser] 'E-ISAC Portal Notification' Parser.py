@@ -2,7 +2,7 @@
 @Title: 'E-ISAC Portal Notification' Parser
 @Purpose: Parses 'E-ISAC Portal Notification' emails sent from E-ISAC.
 @Author: Jared Fagel, et al. as mentioned.
-@Date: 02/12/2019 - Modified: 02/15/2019
+@Date: 02/12/2019 - Modified: 11/16/2019
 """
 
 import re
@@ -10,7 +10,7 @@ import java.util.Date as Date
 
 
 ###  Create basic variables [START]
-incident_owner = "alerts_resilient@allete.com"
+incident_owner = "automation@domain.com"
 email_subject_line = emailmessage.subject
 email_body = emailmessage.body.content
 email_sender_email_address = (emailmessage.from)['address']
@@ -38,7 +38,6 @@ email_body = email_body.replace('\n', ' ').replace('\r', ' ')
 
 ###  Parse items from email_body [START]
 bulletin_name = 'E-ISAC Portal Notification - ' + ((email_subject_line.split('E-ISAC Portal Notification - ', 1)[1]).split(' - New Cyber Bulletin', 1)[0]).strip()
-#bulletin_name = bulletin_name.encode('ascii', 'ignore').decode('ascii', 'ignore')
 bulletin_description = ((email_body_cleaned.split('Cyber Bulletin Follows', 1)[1]).split('To login and view the entire posting, click here:', 1)[0]).strip()
 bulletin_description = bulletin_description[::-1].replace('<br>'[::-1], ''[::-1], 2)[::-1]
 bulletin_description = bulletin_description.replace('style=', 'strip=').replace('<span', '<remove_me', 1).replace('</p><p>', '<br><br>').replace('</span>', '', 1).replace('<br', '<xyz', 1) #  Formatting for neatness
