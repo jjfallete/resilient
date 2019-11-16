@@ -24,7 +24,7 @@
 | cb_retrieve_installed_programs | Retrieve the installed programs from an endpoint in a CSV file. |
 | cb_retrieve_logged_in_users | Retrieve the users currently logged from an endpoint in a CSV file. |
 | cb_retrieve_network_routing_data | Retrieve the network routing table and the network interfaces from an endpoint in a TXT file. |
-| cb_retrieve_network_routing_data | Retrieve the prefetch files from an endpoint in a ZIP file and a listing of them in a CSV file. |
+| cb_retrieve_prefetch_files | Retrieve the prefetch files from an endpoint in a ZIP file and a listing of them in a CSV file. |
 | cb_retrieve_process_list | Retrieve currently running processes and corresponding process details from an endpoint in a CSV file. |
 | cb_retrieve_registry_hives | Retrieve the registry hives from an endpoint in a ZIP file.<br/>Uses these utilities:<br/>RegistryCapture.ps1: https://github.com/Jrotenberger/Powershell-IR-Scripts/<br/>RawCopy: https://github.com/jschicht/RawCopy|
 | cb_retrieve_scheduled_tasks | Retrieve the scheduled tasks from an endpoint in a CSV file. |
