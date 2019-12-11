@@ -3,10 +3,6 @@ import re
 # A script to create an incident from an email message, and add artifacts to the incident based on information
 # present in the body text of the message.
 
-for attachment in emailmessage.attachments:
-  if not attachment.inline:
-    incident.addEmailAttachment(attachment.id)
-
 
 #  Create basic variables
 incident_id = int((emailmessage.subject).split('[Resilient Incident ID# ', 1)[-1].split(']', 1)[0].strip())
@@ -30,6 +26,10 @@ incidents = helper.findIncidents(query)
 
 if len(incidents) != 0:
   emailmessage.associateWithIncident(incidents[0])
+  
+  for attachment in emailmessage.attachments:
+    if not attachment.inline:
+      incident.addEmailAttachment(attachment.id)
   
   #if(incident.plan_status == 'A') : old_status = "active"
   #else: old_status = "closed"
