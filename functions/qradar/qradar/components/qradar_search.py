@@ -15,7 +15,8 @@ from resilient_circuits import ResilientComponent, function, handler, StatusMess
 from qradar.util.qradar_utils import QRadarClient
 from qradar.util import function_utils
 
-MAX_UPLOAD_SIZE = 50*1000000  # Maximum number of bytes of files to upload as an attachment before reverting to a netshare drop, default = 50MB
+MAX_UPLOAD_SIZE = 50*1000000  # Maximum number of bytes of files to upload as an attachment before reverting to a network share drop, default = 50MB
+NET_SHARE_PATH = r'/mnt/cyber-sec-forensics/Resilient'  # Network share path accessible to Resilient Circuits
 
 
 class FunctionComponent(ResilientComponent):
@@ -90,17 +91,12 @@ class FunctionComponent(ResilientComponent):
                         self.rest_client().post_attachment('/incidents/{0}/attachments'.format(incident_id), temp_zip.name, 'QRadar_Search_Query_Results{0}.zip'.format(''))  # Post temp_zip to incident
                         yield StatusMessage('[SUCCESS] Posted ZIP file of QRadar Search Query to the incident as an attachment!')
                     else:
-                        if not os.path.exists(os.path.normpath('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))): os.makedirs('/mnt/cyber-sec-forensics/Resilient/{0}'.format(incident_id))
-                        shutil.copyfile(temp_zip.name, '/mnt/cyber-sec-forensics/Resilient/{0}/QRadar_Search_Query_Results{1}.zip'.format(incident_id, ''))  # Post temp_zip to network share
+                        if not os.path.exists(os.path.normpath(NET_SHARE_PATH + '/{0}'.format(incident_id))): os.makedirs('/{0}'.format(incident_id))
+                        shutil.copyfile(temp_zip.name, NET_SHARE_PATH + '/{0}/QRadar_Search_Query_Results{1}.zip'.format(incident_id, ''))  # Post temp_zip to network share
                         yield StatusMessage('[SUCCESS] Posted ZIP file of QRadar Search Query to the forensics network share!')
 
                 finally:
                     os.unlink(temp_zip.name)  # Delete temporary temp_file
-
-            #except Exception as err:  # Catch all other exceptions and abort
-            #    yield StatusMessage('[FATAL ERROR] Encountered: ' + str(err))
-            #    yield StatusMessage('[FAILURE] Fatal error caused exit!')
-            #    results["was_successful"] = False
 
             #else:
             results["was_successful"] = True
