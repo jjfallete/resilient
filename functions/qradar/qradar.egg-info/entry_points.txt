@@ -1,0 +1,13 @@
+[resilient.circuits.components]
+QradarAddReferenceSetItemFunctionComponent = qradar.components.qradar_add_reference_set_item:FunctionComponent
+QradarDeleteReferenceSetItemFunctionComponent = qradar.components.qradar_delete_reference_set_item:FunctionComponent
+QradarFindReferenceSetItemFunctionComponent = qradar.components.qradar_find_reference_set_item:FunctionComponent
+QradarFindReferenceSetsFunctionComponent = qradar.components.qradar_find_reference_sets:FunctionComponent
+QradarSearchFunctionComponent = qradar.components.qradar_search:FunctionComponent
+
+[resilient.circuits.configsection]
+gen_config = qradar.util.config:config_section_data
+
+[resilient.circuits.customize]
+customize = qradar.util.customize:customization_data
+

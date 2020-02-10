@@ -1,0 +1,11 @@
+Metadata-Version: 1.1
+Name: qradar
+Version: 2.0.1
+Summary: Resilient Circuits Components for 'qradar'
+Home-page: UNKNOWN
+Author: IBM Resilient and Jared Fagel
+Author-email: support@resilientsystems.com
+License: MIT License
+Description: qradar supports performing ariel search to retrieve data from QRadar. It also provide functions to find/add/delete reference set items.
+Platform: any
+Classifier: Programming Language :: Python

@@ -1,0 +1,4 @@
+include README.md
+include qradar/util/*
+include qradar/LICENSE
+include qradar/doc/*

@@ -1,0 +1,19 @@
+# -*- coding: utf-8 -*-
+# (c) Copyright IBM Corp. 2018. All Rights Reserved.
+"""Generate a default configuration-file section for qradar"""
+
+from __future__ import print_function
+
+
+def config_section_data():
+    """Produce the default configuration section for app.config,
+       when called by `resilient-circuits config [-c|-u]`
+    """
+    config_data = u'''[qradar]
+host=localhost
+username=admin
+qradarpassword=changeme
+#Note, if both qradarpassword and qadartoken are given, password will be used
+qradartoken=changeme
+'''
+    return config_data
