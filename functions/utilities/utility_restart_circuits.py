@@ -2,13 +2,13 @@
 # pragma pylint: disable=unused-argument, no-self-use
 
 # This function will restart Resilient Circuits.
-# File: utility_restart_resilient_circuits.py
-# Date: 04/26/2019 - Modified: 07/10/2019
+# File: utility_restart_circuits.py
+# Date: 04/26/2019 - Modified: 04/11/2020
 # Author: Jared F
 
 """Function implementation"""
 #   @function -> utility_restart_resilient_circuits
-#   @params -> None
+#   @params -> boolean: reboot_server
 #   @return -> boolean: results['was_successful']
 
 
@@ -27,13 +27,12 @@ class FunctionComponent(ResilientComponent):
     def __init__(self, opts):
         """constructor provides access to the configuration options"""
         super(FunctionComponent, self).__init__(opts)
-        self.options = opts.get("carbon_black", {})
-        selftest.selftest_function(opts)
+        self.options = opts.get("utilities", {})
 
     @handler("reload")
     def _reload(self, event, opts):
         """Configuration options have changed, save new values"""
-        self.options = opts.get("carbon_black", {})
+        self.options = opts.get("utilities", {})
 
     @function("utility_restart_resilient_circuits")
     def _utility_restart_resilient_circuits_function(self, event, *args, **kwargs):
@@ -53,7 +52,7 @@ class FunctionComponent(ResilientComponent):
                     os.system('reboot')
                 else:
                     yield StatusMessage('[INFO] Restarting the Resilient Circuits service...')
-                    os.system("sudo systemctl restart resilient_circuits.service")
+                    os.system("sudo systemctl restart resilient_circuits.service")  # Modify as needed
 
             else:
                 os.remove('/home/integrations/.resilient/rc_restarted.lock')
