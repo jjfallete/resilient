@@ -266,6 +266,8 @@ class ArielSearch(object):
                     # time_out defaults to 10 minutes. If customer overrides it to 0, it will never timeout
                     if self.search_timeout != 0:
                         if time.time() - start_time > self.search_timeout:
+                            self.cancel_search(search_id)  # Cancel search on timeout
+                            # We could return the search results instead of raising an exception, but they would be incomplete.
                             raise SearchTimeout(search_id, status)
                     time.sleep(self.polling_period)  # polling_interval is defaulted to 5 sec
         else:
