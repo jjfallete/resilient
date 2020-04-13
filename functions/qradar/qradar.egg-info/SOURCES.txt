@@ -15,6 +15,7 @@ qradar/components/qradar_delete_reference_set_item.py
 qradar/components/qradar_find_reference_set_item.py
 qradar/components/qradar_find_reference_sets.py
 qradar/components/qradar_search.py
+qradar/util/SearchWaitCommand.py
 qradar/util/__init__.py
 qradar/util/__init__.pyc
 qradar/util/config.py
