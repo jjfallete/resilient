@@ -14,11 +14,11 @@ query = '''
         LAST qradar_days_goes_here DAYS
         '''
         
-query = query.replace('qradar_days_goes_here', str(rule.properties.days_to_search)).strip()  # Replace AQL variables with proper values
+query = query.replace('qradar_days_goes_here', str(rule.properties.days_to_search)).strip()  # Replace AQL variables user provided value
 inputs.qradar_query = query
 
 inputs.qradar_query_range_start = 0  # Start with the most recent event
-inputs.qradar_query_range_end = 1000000  # Limt to 1M events
+inputs.qradar_query_range_end = 1000000  # Limt to 1M events (applies to CSV)
 inputs.qradar_query_timeout_mins = rule.properties.qradar_query_timeout_mins  # Timeout before the query search will halt and return what it found
 ```
 
