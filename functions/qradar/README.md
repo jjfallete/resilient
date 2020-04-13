@@ -2,7 +2,8 @@ The qradar_search function is much different than in the Resilient version (v2.x
 
 
 Example Pre-processor:
-`inputs.incident_id = incident.id
+```
+inputs.incident_id = incident.id
 
 # AQL query
 query = '''
@@ -18,10 +19,12 @@ inputs.qradar_query = query
 
 inputs.qradar_query_range_start = 0  # Start with the most recent event
 inputs.qradar_query_range_end = 1000000  # Limt to 1M events
-inputs.qradar_query_timeout_mins = rule.properties.qradar_query_timeout_mins  # Timeout before the query search will halt and return what it found`
+inputs.qradar_query_timeout_mins = rule.properties.qradar_query_timeout_mins  # Timeout before the query search will halt and return what it found
+```
 
 Example Post-processor:
-`# NOTE: Ensure the Resilient data table's columns are the same as the AQL fields returned (order does not matter).
+```
+# NOTE: Ensure the Resilient data table's columns are the same as the AQL fields returned (order does not matter).
 #           This means that, for example, "Username" from QRadar AQL cannot be "User Name" or "User" in the data table.
 
 # CONFIG:
@@ -48,7 +51,8 @@ if(results['was_successful'] is True):
         
         table_row[column_api_name] = row_data_for_column  # Write to the row's proper column (cell)
         
-      if max_rows_for_table == 0: break  # Exit once the max_rows_for_table is hit`
+      if max_rows_for_table == 0: break  # Exit once the max_rows_for_table is hit
+```
 
 ==
 
