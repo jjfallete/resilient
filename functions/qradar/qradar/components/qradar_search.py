@@ -36,6 +36,8 @@ class FunctionComponent(ResilientComponent):
     def _qradar_search_function(self, event, *args, **kwargs):
 
         results = {}
+        results["was_successful"] = False
+        results["events"] = None
 
         try:
             # Get the function parameters:
@@ -44,28 +46,44 @@ class FunctionComponent(ResilientComponent):
             qradar_query_range_start = kwargs.get("qradar_query_range_start")  # number
             qradar_query_range_end = kwargs.get("qradar_query_range_end")  # number
             qradar_query_timeout_mins = kwargs.get("qradar_query_timeout_mins")  # number
+            
+            # Get the workflow data:
+            wf_instance_id = event.message["workflow_instance"]["workflow_instance_id"]
+            res_client = self.rest_client()
+            wf_bundle = [res_client, wf_instance_id]
 
-            # Get app.config vars
+            # Get app.config vars:
             qradar_config = self.opts.get("qradar")
             host = qradar_config.get("host")
             qradartoken = qradar_config.get("qradartoken")
 
             log = logging.getLogger(__name__)
 
-            qradar_verify_cert = False
+            # qradar_verify_cert = False  # Add this in if SSL cert verification should be bypassed.
 
             if qradar_query_timeout_mins is None: qradar_query_timeout = float(86400)  # Default: 1 day
             else: qradar_query_timeout = float(qradar_query_timeout_mins*60)
 
-            #try:
             log.debug('[INFO] Connecting to QRadar API...')
             qradar_client = QRadarClient(host=host, username=None, password=None, token=qradartoken, cafile=qradar_verify_cert)
+            if qradar_client.verify_connect() is False:
+                yield StatusMessage('[FATAL ERROR] Unable to establish API connection to QRadar!')
+                yield FunctionResult(results)
+                return
+            log.debug('[INFO] Connected to QRadar API!')
 
             yield StatusMessage('[INFO] Running QRadar search query...')
-            log.info('[INFO] QRadar search query: ' + qradar_query)
-            query_result = qradar_client.ariel_search(qradar_query, range_start=qradar_query_range_start, range_end=qradar_query_range_end, timeout=qradar_query_timeout)
+            log.debug('QRadar search query: ' + qradar_query)
+            query_result = qradar_client.ariel_search(qradar_query, range_start=qradar_query_range_start, range_end=qradar_query_range_end, timeout=qradar_query_timeout, wf_bundle=wf_bundle)
 
-            yield StatusMessage('[INFO] Search query completed!')
+            if query_result is None:
+                yield StatusMessage('[INFO] Search canceled!')
+
+            else:
+                yield StatusMessage('[INFO] Search completed!')
+
+                results["was_successful"] = True
+                results["events"] = query_result['events']
 
             with tempfile.NamedTemporaryFile(delete=False) as temp_zip:  # Create temporary temp_zip for creating zip_file
                 try:
@@ -97,10 +115,6 @@ class FunctionComponent(ResilientComponent):
 
                 finally:
                     os.unlink(temp_zip.name)  # Delete temporary temp_file
-
-            #else:
-            results["was_successful"] = True
-            results["events"] = query_result['events']
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
