@@ -5,13 +5,13 @@
 #   Util classes for qradar
 #
 import requests
-import json
-#import qradar_constants
-import qradar.util.qradar_constants as qradar_constants
+import time
 import base64
 import logging
-from qradar.util.SearchWaitCommand import SearchWaitCommand, SearchFailure, SearchJobFailure
+import qradar.util.qradar_constants as qradar_constants
 import qradar.util.function_utils as function_utils
+from resilient_lib import get_workflow_status
+
 
 # handle python2 and 3
 try:
@@ -28,12 +28,31 @@ class RequestError(Exception):
         fail_msg = "Request to url [{}] throws exception. Error [{}]".format(url, message)
         super(RequestError, self).__init__(fail_msg)
 
-
 class DeleteError(Exception):
     """ Request error"""
     def __init__(self, url, message):
         fail_msg = "Delete request to url [{}] throws exception. Error [{}]".format(url, message)
         super(DeleteError, self).__init__(fail_msg)
+
+class SearchTimeout(Exception):
+    """ Query failed to complete in time specified """
+    def __init__(self, search_id, search_status):
+        fail_msg = "Query [{}] timed out. Final Status was [{}]".format(search_id, search_status)
+        super(SearchTimeout, self).__init__(fail_msg)
+        self.search_status = search_status
+
+class SearchJobFailure(Exception):
+    """ Search job creation failure"""
+    def __init__(self, query):
+        fail_msg = "Failed to create search job for query [{}] ".format(query)
+        super(SearchJobFailure, self).__init__(fail_msg)
+
+class SearchFailure(Exception):
+    """ Search failed to execute """
+    def __init__(self, search_id, search_status):
+        fail_msg = "Query [{}] failed with status [{}]".format(search_id, str(search_status))
+        super(SearchFailure, self).__init__(fail_msg)
+        self.search_status = search_status
 
 
 class AuthInfo(object):
@@ -76,16 +95,13 @@ class AuthInfo(object):
         self.cafile = cafile
 
 
-class ArielSearch(SearchWaitCommand):
-    """
-    Subclass of SearchWaitCommand.
-    Overrides/implements get_search_id, check_status, get_search_result for QRadar
-    """
+class ArielSearch(object):
 
-    def __init__(self, timeout=600, poll=5):
+    def __init__(self, timeout=600, polling_period=5):
         self.range_start = 0
         self.range_end = 50
-        super(ArielSearch, self).__init__(timeout, poll)
+        self.search_timeout = timeout
+        self.polling_period = polling_period
 
     def set_range_start(self, start):
         """
@@ -115,6 +131,7 @@ class ArielSearch(SearchWaitCommand):
         Get the search if associated with the search using query
         :param query: input query string
         :return: search_id returned from QRadar
+        :raises SearchJobFailure
         """
         auth_info = AuthInfo.get_authInfo()
         url = auth_info.api_url + qradar_constants.ARIEL_SEARCHES
@@ -123,14 +140,11 @@ class ArielSearch(SearchWaitCommand):
 
         search_id = ""
         try:
-            response = requests.Session().post(url=url,
-                                               headers=auth_info.headers,
-                                               data=data,
-                                               verify=auth_info.cafile)
-
+            response = requests.Session().post(url=url, headers=auth_info.headers, data=data, verify=auth_info.cafile)
             json = response.json()
             if "search_id" in json:
                 search_id = json["search_id"]
+
         except Exception as e:
             LOG.error(str(e))
             raise SearchJobFailure(query)
@@ -142,6 +156,7 @@ class ArielSearch(SearchWaitCommand):
         Get search result associated with search_id
         :param search_id:
         :return: dict with events
+        :raises SearchFailure
         """
         auth_info = AuthInfo.get_authInfo()
         url = auth_info.api_url + qradar_constants.ARIEL_SEARCHES_RESULT.format(search_id)
@@ -153,9 +168,7 @@ class ArielSearch(SearchWaitCommand):
 
         response = None
         try:
-            response = requests.Session().get(url=url,
-                                              headers=headers,
-                                              verify=auth_info.cafile)
+            response = requests.Session().get(url=url, headers=headers, verify=auth_info.cafile)
         except Exception as e:
             LOG.error(str(e))
             raise SearchFailure(search_id, None)
@@ -171,30 +184,97 @@ class ArielSearch(SearchWaitCommand):
     def check_status(self, search_id):
         """
         Check the search status associated with search_id
-        :param search_id:
-        :return:
+        :param search_id
+        :return: qradar_constants.SEARCH_STATUS_COMPLETED, qradar_constants.SEARCH_STATUS_WAIT
+        :raises SearchFailure
         """
         auth_info = AuthInfo.get_authInfo()
         url = "{}{}/{}".format(auth_info.api_url, qradar_constants.ARIEL_SEARCHES, search_id)
-        status = SearchWaitCommand.SEARCH_STATUS_ERROR_STOP
+        status = None
         try:
-            response = requests.Session().get(url=url,
-                                              headers=auth_info.headers,
-                                              verify=auth_info.cafile)
+            response = requests.Session().get(url=url, headers=auth_info.headers, verify=auth_info.cafile)
             json_dict = response.json()
             if "status" in json_dict:
                 if json_dict["status"] == qradar_constants.SEARCH_STATUS_COMPLETED:
-                    status = SearchWaitCommand.SEARCH_STATUS_COMPLETED
+                    status = qradar_constants.SEARCH_STATUS_COMPLETED
                 elif json_dict["status"] == qradar_constants.SEARCH_STATUS_WAIT \
                     or json_dict["status"] == qradar_constants.SEARCH_STATUS_SORTING \
                         or json_dict["status"] == qradar_constants.SEARCH_STATUS_EXECUTE:
-                    status = SearchWaitCommand.SEARCH_STATUS_WAITING
+                    status = qradar_constants.SEARCH_STATUS_WAIT  # Consider WAIT, SORTING, and EXECUTE as a WAIT status.
+                else:  # CANCELED or ERROR status possible here
+                    raise SearchFailure(search_id, status)
 
         except Exception as e:
             LOG.error(str(e))
             raise SearchFailure(search_id, status)
 
         return status
+
+    def cancel_search(self, search_id):
+        """
+        Cancels the search associated with search_id
+        :param search_id
+        :raises SearchJobFailure
+        """
+        auth_info = AuthInfo.get_authInfo()
+        url = "{}{}/{}".format(auth_info.api_url, qradar_constants.ARIEL_SEARCHES, search_id)
+        data = {"status": "CANCELED"}
+        try:
+            response = requests.Session().post(url=url, headers=auth_info.headers, data=data, verify=auth_info.cafile)
+            json_dict = response.json()
+
+            if len(json_dict) == 0 or response.status_code != 200:
+                raise SearchJobFailure("Search cancellation attempted, but failed due to an invalid response code!")
+
+        except Exception as e:
+            LOG.error(str(e))
+            raise SearchJobFailure("Search cancellation attempted, but failed due to an exception!")
+
+    def perform_search(self, query, wf_bundle):
+        """
+        Performs an ariel search from a provided AQL query string with workflow state in mind.
+        :param query: query string to perform search
+        :param wf_bundle: list containing two elements, the Resilient rest_client() and the Resilient workflow_id respectively
+        :return: result: search results, None returned if workflow is stopped prior to search completion
+        :raises SearchFailure or SearchJobFailure
+        """
+        search_id = self.get_search_id(query)
+
+        if search_id:
+            start_time = time.time()  # store the start time
+            done = False
+
+            LOG.info('Ariel search started under search_id: ' + str(search_id))
+
+            while not done:
+                status = self.check_status(search_id)
+                if wf_bundle:
+                    if (get_workflow_status(wf_bundle[0], wf_bundle[1])).is_terminated:
+                        LOG.info('Workflow terminated. Canceling search...')
+                        self.cancel_search(search_id)
+                        return None
+
+                if status == qradar_constants.SEARCH_STATUS_COMPLETED:
+                    done = True
+                elif status == qradar_constants.SEARCH_STATUS_WAIT:
+                    done = False
+                else:
+                    LOG.error('Unexpected search status returned of: ' + str(status))
+                    raise SearchFailure(search_id, status)
+
+                if not done:
+                    # time_out defaults to 10 minutes. If customer overrides it to 0, it will never timeout
+                    if self.search_timeout != 0:
+                        if time.time() - start_time > self.search_timeout:
+                            raise SearchTimeout(search_id, status)
+                    time.sleep(self.polling_period)  # polling_interval is defaulted to 5 sec
+        else:
+            LOG.error("search_id is None")
+            raise SearchJobFailure(query)
+
+        result = self.get_search_result(search_id)
+
+        return result
 
 
 class QRadarClient(object):
@@ -220,25 +300,24 @@ class QRadarClient(object):
     def get_versions(self):
         """
         Util function used to test connectivity to QRadar
-        :return:
+        :return: response of API call
         """
         auth_info = AuthInfo.get_authInfo()
 
         url = auth_info.api_url + qradar_constants.HELP_VERSIONS
         session = requests.Session()
-        response = session.get(url,
-                               headers=auth_info.headers,
-                               verify=auth_info.cafile)
+        response = session.get(url, headers=auth_info.headers, verify=auth_info.cafile)
 
         return response
 
-    def ariel_search(self, query, range_start=None, range_end=None, timeout=None):
+    def ariel_search(self, query, range_start=None, range_end=None, timeout=None, wf_bundle=None):
         """
         Perform an Ariel search
         :param query: query string
-        :param range_start:
-        :param range_end:
+        :param range_start: start index of event results to return
+        :param range_end: ending index of event results to return
         :param timeout: timeout for search
+        :param wf_bundle: list containing two elements, the Resilient rest_client() and the Resilient workflow_id respectively
         :return: dict with events
         """
         ariel_search = ArielSearch()
@@ -251,7 +330,7 @@ class QRadarClient(object):
         if timeout is not None:
             ariel_search.set_timeout(timeout)
 
-        response = ariel_search.perform_search(query)
+        response = ariel_search.perform_search(query, wf_bundle)
         return response
 
     def verify_connect(self):
@@ -289,9 +368,7 @@ class QRadarClient(object):
         url = "{}{}".format(auth_info.api_url, qradar_constants.REFERENCE_SET_URL)
         ret = []
         try:
-            response = requests.Session().get(url=url,
-                                              headers=auth_info.headers,
-                                              verify=auth_info.cafile)
+            response = requests.Session().get(url=url, headers=auth_info.headers, verify=auth_info.cafile)
             #
             # Sample return:
             """
@@ -330,7 +407,6 @@ class QRadarClient(object):
             LOG.info(u"Looking for {} in reference set {}".format(value, r_set["name"]))
             element = QRadarClient.search_ref_set(r_set["name"], value)
             if element["found"] == "True":
-
                 ret.append(element["content"])
 
         return ret
@@ -361,9 +437,7 @@ class QRadarClient(object):
                 parameter = quote('?filter=value="{}"'.format(filter))
                 url = url + parameter
 
-            response = requests.Session().get(url=url,
-                                              headers=auth_info.headers,
-                                              verify=auth_info.cafile)
+            response = requests.Session().get(url=url, headers=auth_info.headers, verify=auth_info.cafile)
             # Sample return
             #{"creation_time":1523020929069,"timeout_type":"FIRST_SEEN","number_of_elements":2,
             # "data":[{"last_seen":1523020984874,"first_seen":1523020984874,"source":"admin","value":"8.8.8.8"}],
@@ -374,9 +448,7 @@ class QRadarClient(object):
             if len(ret_data) > 0 and response.status_code == 200:
                 found = "True"
 
-            ret = {"status_code": response.status_code,
-                   "found": found,
-                   "content": response.json()}
+            ret = {"status_code": response.status_code, "found": found, "content": response.json()}
 
         except Exception as e:
             LOG.error(str(e))
@@ -400,13 +472,9 @@ class QRadarClient(object):
         try:
             data = {"value": quote(value)}
 
-            response = requests.Session().post(url=url,
-                                               headers=auth_info.headers,
-                                               data=data,
-                                               verify=auth_info.cafile)
+            response = requests.Session().post(url=url, headers=auth_info.headers, data=data, verify=auth_info.cafile)
 
-            ret = {"status_code": response.status_code,
-                   "content": response.json()}
+            ret = {"status_code": response.status_code, "content": response.json()}
 
         except Exception as e:
             LOG.error(str(e))
@@ -425,20 +493,17 @@ class QRadarClient(object):
         auth_info = AuthInfo.get_authInfo()
         ref_set_link = quote(ref_set, '')
         value = quote(value, '')
-        url = "{}{}/{}/{}".format(auth_info.api_url, qradar_constants.REFERENCE_SET_URL,
-                                  ref_set_link, value)
+        url = "{}{}/{}/{}".format(auth_info.api_url, qradar_constants.REFERENCE_SET_URL, ref_set_link, value)
 
         ret = {}
         try:
-            response = requests.Session().delete(url=url,
-                                       headers=auth_info.headers,
-                                       verify=auth_info.cafile)
+            response = requests.Session().delete(url=url, headers=auth_info.headers, verify=auth_info.cafile)
 
-            ret = {"status_code": response.status_code,
-                   "content": response.json()}
+            ret = {"status_code": response.status_code, "content": response.json()}
 
         except Exception as e:
             LOG.error(str(e))
             raise DeleteError(url, "delete_ref_element failed with exception {}".format(str(e)))
 
         return ret
+    
