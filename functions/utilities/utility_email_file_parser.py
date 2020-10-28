@@ -3,7 +3,7 @@
 
 # This python function will parse a .eml attachment in Resilient.
 # File: utility_email_file_parser.py
-# Date: 02/27/2019 - Modified: 03/12/2019
+# Date: 02/27/2019 - Modified: 08/20/2020
 # Author: Jared F
 
 """Function implementation"""
@@ -17,6 +17,7 @@ import os
 import email
 import tempfile
 import logging
+from urlparse import urlparse
 from BeautifulSoup import BeautifulSoup as BSHTML
 from email.header import decode_header
 from resilient_lib import get_file_attachment
@@ -309,6 +310,7 @@ def get_decoded_email_header(mail_items):
                         if len(encoded.groups()) != 3: continue
                         charset, encoding, encoded_text = encoded.groups()
                         if encoding is 'B': content = content.replace('=?' + each + '?=', encoded_text.decode('base64').decode(charset).encode('UTF-8'))
+			content = unicodedata.normalize("NFKD", str(content))  # Added 11/28/19 to fix occasional encoding issues.
             header.append([item, content])
         return header
 
@@ -356,6 +358,17 @@ class FunctionComponent(ResilientComponent):
             # results['mail_items'] = mail.items()  # List of 2-tuples containing all the decoded message’s field headers and values (3/12/2019: deprecated, use 'header')
             results['attachments'] = attachments  # List of attachment names from EML file
             results['urls'] = list(set(urls))  # URLs from body. Set inside of the list used to ensures no duplicates.
+
+            url_domains = []
+            for url in results["urls"]:
+                try:
+                    parsed_url = urlparse(url)
+                    if parsed_url.netloc: parsed_url = parsed_url.netloc
+                    elif parsed_url.path: parsed_url = str(parsed_url.path).split('/')[0]
+                    if parsed_url.startswith('www.'): parsed_url = parsed_url.replace('www.', '', 1)
+                    url_domains.append(parsed_url)
+                except Exception as err: continue
+            results["url_domains"] = url_domains  # URL domains from body URLs.
 
             # Produce a FunctionResult with the results
             yield FunctionResult(results)
