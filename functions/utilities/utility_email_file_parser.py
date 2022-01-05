@@ -17,6 +17,7 @@ import os
 import email
 import tempfile
 import logging
+import unicodedata
 from urlparse import urlparse
 from BeautifulSoup import BeautifulSoup as BSHTML
 from email.header import decode_header
@@ -309,8 +310,9 @@ def get_decoded_email_header(mail_items):
                     if encoded:
                         if len(encoded.groups()) != 3: continue
                         charset, encoding, encoded_text = encoded.groups()
+			each = each.replace('=?', '').replace('?=', '')
                         if encoding is 'B': content = content.replace('=?' + each + '?=', encoded_text.decode('base64').decode(charset).encode('UTF-8'))
-			content = unicodedata.normalize("NFKD", str(content))  # Added 11/28/19 to fix occasional encoding issues.
+			content = unicodedata.normalize("NFKD", unicode(content, "utf-8")).encode('UTF-8')  # Added 11/28/19 to fix occasional encoding issues.
             header.append([item, content])
         return header
 
